@@ -1,6 +1,6 @@
 function Main (parentElement)
 {
-    parentElement.appendChild (new ThreeJsCanvas ());
+    parentElement.append (new ThreeJsCanvas ());
 }
 
 function ThreeJsCanvas ()
