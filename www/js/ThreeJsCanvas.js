@@ -1,8 +1,3 @@
-function Main (parentElement)
-{
-    parentElement.append (new ThreeJsCanvas ());
-}
-
 function ThreeJsCanvas ()
 {
     var camera, scene, renderer, controls;
@@ -27,14 +22,16 @@ function ThreeJsCanvas ()
         scene.add (light);
 
         renderer = new THREE.WebGLRenderer ({antialias: true});
-        renderer.setClearColor (0xAAAAAA);
+        renderer.setClearColor ($('body').css ('background-color'));
         renderer.setSize (window.innerWidth, window.innerHeight);
 
         window.addEventListener ('resize', onWindowResize, false);
 
         var loader = new THREE.BinaryLoader ();
         loader.load ("data/bin/FJ3199.js", createMesh);
+        $('#progressbar').progressbar ({ value: 20 });
         loader.load ("data/bin/FJ3200.js", createMesh);
+        $('#progressbar').progressbar ({ value: 40 });
         loader.load ("data/bin/FJ3274.js", createMesh);
         loader.load ("data/bin/FJ3281.js", createMesh);
         loader.load ("data/bin/FJ3309.js", createMesh);

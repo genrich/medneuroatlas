@@ -9,21 +9,24 @@
         <script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
         <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
         <script src="lib/three.min.js"></script>
-        <script src="js/Main.js"></script>
+        <script src="lib/signals.min.js"></script>
+        <script src="js/main.js"></script>
+        <script src="js/ThreeJsCanvas.js"></script>
+        <script src="js/Ontology.js"></script>
     </head>
-	<body onload="Main($('div.Viewport'))">
+	<body onload="main($('div.Viewport'))">
         <div class="Viewport"></div>
         <nav>
-            <section class="ui-widget">
-                <label for="search">Search: </label>
-                <input id="search">
+            <section>
+                <label for="search">Search: </label><input id="search">
             </section>
-            <ul id="selectable">
-                <li class="ui-widget-content">Item 1</li>
-                <li class="ui-widget-content">Item 2</li>
-                <li class="ui-widget-content">Item 3</li>
-            </ol>
+            <ul id="search-result"></ul>
         </nav>
-        <footer class="Footer">Based on data from: "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan"</footer>
+        <footer>
+            <div id="progressbar"><div class="progress-label"></div></div>
+            <div id="copyright">
+                Based on data from: "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan"
+            </div>
+        </footer>
     </body>
 </html>
