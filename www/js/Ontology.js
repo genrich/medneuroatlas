@@ -2,9 +2,27 @@ function Ontology (sig)
 {
     var db,
         dbName    = 'medneuroatlas',
-        dbVersion = 1;
+        dbVersion = 1,
+        // {conceptId: 'FMA123', description: 'organ name'}
+        isA       = [],
+        partOf    = [];
 
-    function loadData (db, storeName, keyName, indexes)
+    function loadSearchablePartsList (arrayName, fileName)
+    {
+        $.get ('data/' + fileName + '.txt', function (data)
+        {
+            var lines = data.split ('\n');
+
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length === 3)
+                    arrayName.push ({ conceptId: fields[0], description: fields[2] });
+            }
+        });
+    }
+
+    function loadPartsList (db, storeName, keyName, indexes)
     {
         var objectStore = db.createObjectStore (storeName, { keyPath: keyName });
         indexes.forEach (function (idx)
@@ -31,47 +49,51 @@ function Ontology (sig)
         });
     }
 
-    this.searchPartOf = function (str)
+    this.search = function (str)
     {
-        var storeName = 'partof_parts_list_e';
-        var li = [];
-        var maxCount = 1368;
-        var count = 0;
-        var foundCount = 0;
+        var li         = [],
+            count      = 0,
+            foundCount = 0;
+        const limit = 10;
 
         $('#search').prop ('disabled', true);
 
-        sig.progressInitialized.dispatch ('Searching...', maxCount);
-
-        var store = db.transaction (storeName).objectStore (storeName);
-        store.openCursor ().onsuccess = function (evnt)
+        for (var i = 0; i < isA.length; i++)
         {
-            var cursor = evnt.target.result;
-            if (cursor && foundCount < 10)
+            var record = isA[i];
+            if (record.description.indexOf (str) !== -1)
             {
-                var record = cursor.value;
-                if (record.description.indexOf (str) !== -1)
-                {
-                    foundCount++;
-                    li.push ('<li>' + record.conceptId + ', ' + record.description + '</li>');
-                }
-                sig.progressUpdated.dispatch (++count);
-
-                cursor.continue ();
+                foundCount++;
+                li.push ('<li>' + record.conceptId + ', ' + record.description + '</li>');
             }
-            else
+
+            if (foundCount >= limit)
+                break;
+        }
+
+        foundCount = 0;
+        for (var i = 0; i < partOf.length; i++)
+        {
+            var record = partOf[i];
+            if (record.description.indexOf (str) !== -1)
             {
-                if (count !== maxCount)
-                    sig.progressUpdated.dispatch (maxCount);
-
-                $('#search-result').html (li.join (''));
-                $('#search').prop ('disabled', false);
+                foundCount++;
+                li.push ('<li>' + record.conceptId + ', ' + record.description + '</li>');
             }
-        };
+
+            if (foundCount >= limit)
+                break;
+        }
+
+        $('#search-result').html (li.join (''));
+        $('#search').prop ('disabled', false);
     };
 
     (function init ()
     {
+        loadSearchablePartsList (isA,    'isa_parts_list_e');
+        loadSearchablePartsList (partOf, 'partof_parts_list_e');
+
         var request = indexedDB.open (dbName, dbVersion);
 
         request.onsuccess = function (evnt)
@@ -82,8 +104,8 @@ function Ontology (sig)
         request.onupgradeneeded = function (evnt)
         {
             var db = evnt.target.result;
-            loadData (db, 'isa_parts_list_e',    'conceptId', ['representationId']);
-            loadData (db, 'partof_parts_list_e', 'conceptId', ['representationId']);
+            loadPartsList (db, 'isa_parts_list_e',    'conceptId', ['representationId']);
+            loadPartsList (db, 'partof_parts_list_e', 'conceptId', ['representationId']);
         }
     }) ();
 }

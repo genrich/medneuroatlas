@@ -63,7 +63,7 @@ function main (parentElement)
         searchUI.keyup (function (evnt)
         {
             if (evnt.keyCode == 13)
-                ontology.searchPartOf (searchUI.val ());
+                ontology.search (searchUI.val ());
         });
 
         searchUI.focus ();
