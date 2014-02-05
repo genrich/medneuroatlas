@@ -1,4 +1,4 @@
-function main (parentElement)
+function main ()
 {
     var SIGNALS = window.signals;
 
@@ -52,7 +52,7 @@ function main (parentElement)
         progressDisableTimeout = setTimeout (disableProgressBar, 1);
     }) ();
 
-    parentElement.append (new ThreeJsCanvas ());
+    var viewport = new Viewport ($('#viewport'));
 
     var ontology = new Ontology (sig);
 

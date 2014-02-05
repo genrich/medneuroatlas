@@ -1,12 +1,20 @@
-function ThreeJsCanvas ()
+function Viewport (container)
 {
     var camera, scene, renderer, controls;
 
+    function onWindowResize ()
+    {
+        camera.aspect = container.width () / container.height ();
+        camera.updateProjectionMatrix ();
+
+        renderer.setSize (container.width (), container.height ());
+    }
+
     if (! Detector.webgl) return Detector.addGetWebGLMessage ();
 
-    function init ()
+    (function init ()
     {
-        camera = new THREE.PerspectiveCamera (75, window.innerWidth / window.innerHeight, 1, 10000);
+        camera = new THREE.PerspectiveCamera (75, container.width () / container.height (), 1, 10000);
         camera.position.set (0, -300, 1500);
         camera.up.set (0, 0, 1);
 
@@ -23,7 +31,9 @@ function ThreeJsCanvas ()
 
         renderer = new THREE.WebGLRenderer ({antialias: true});
         renderer.setClearColor ($('body').css ('background-color'));
-        renderer.setSize (window.innerWidth, window.innerHeight);
+        renderer.setSize (container.width (), container.height ());
+
+        container.append (renderer.domElement);
 
         window.addEventListener ('resize', onWindowResize, false);
 
@@ -42,26 +52,13 @@ function ThreeJsCanvas ()
         {
             scene.add (new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({color: 0x777777})));
         }
-    }
+    }) ();
 
-    function onWindowResize ()
-    {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix ();
-
-        renderer.setSize (window.innerWidth, window.innerHeight);
-    }
-
-    function animate ()
+    (function animate ()
     {
         controls.update ();
         renderer.render (scene, camera);
 
         requestAnimationFrame (animate);
-    }
-
-    init ();
-    animate ();
-
-    return renderer.domElement;
+    }) ();
 };

@@ -9,7 +9,7 @@ body
     padding:          0;
 }
 
-.Viewport
+#viewport
 {
     position: absolute;
     top:      0;
