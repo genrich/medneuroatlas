@@ -125,6 +125,7 @@ function Ontology (sig)
         }
 
         $('#search-result').html (li.join (''));
+        $('#search-result li:first-child').addClass ('ui-selected');
         $('#search').prop ('disabled', false);
     };
     
