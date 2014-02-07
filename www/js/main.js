@@ -125,7 +125,7 @@ function main ()
     $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
     $(document).keydown (function (evnt)
     {
-        if (evnt.keyCode == 191) // show help for question mark ?
+        if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
         {
             $('#help').toggle ();
             evnt.preventDefault ();
