@@ -24,88 +24,70 @@ function Ontology (sig)
 
     function loadPartsList (db, storeName)
     {
-        var objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-        objectStore.createIndex ('representationId', 'representationId', { unique: true });
-
         $.get ('data/' + storeName + '.txt', function (data)
         {
             var lines = data.split ('\n');
 
-            objectStore.transaction.oncomplete = function (evnt)
-            {
-                var trx = db.transaction ([storeName], 'readwrite');
-                var objectStore = trx.objectStore (storeName);
+            var trx = db.transaction ([storeName], 'readwrite');
+            var objectStore = trx.objectStore (storeName);
 
-                for (var i = 1; i < lines.length; i++)
-                {
-                    var fields = lines[i].split ('\t');
-                    if (fields.length === 3)
-                        objectStore.add ({ conceptId: fields[0], representationId: fields[1], description: fields[2] });
-                }
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length === 3)
+                objectStore.add ({ conceptId: fields[0], representationId: fields[1], description: fields[2] });
             }
         });
     }
 
     function loadInclusionRelationList (db, storeName)
     {
-        var objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
-        objectStore.createIndex ('parentId', 'parentId', { unique: false });
-        objectStore.createIndex ('childId',  'childId',  { unique: false });
-
         $.get ('data/' + storeName + '.txt', function (data)
         {
             var lines = data.split ('\n');
 
-            objectStore.transaction.oncomplete = function (evnt)
-            {
-                var trx = db.transaction ([storeName], 'readwrite');
-                var objectStore = trx.objectStore (storeName);
+            var trx = db.transaction ([storeName], 'readwrite');
+            var objectStore = trx.objectStore (storeName);
 
-                for (var i = 1; i < lines.length; i++)
-                {
-                    var fields = lines[i].split ('\t');
-                    if (fields.length === 4)
-                        objectStore.add ({ parentId: fields[0], childId: fields[3] });
-                }
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length === 4)
+                objectStore.add ({ parentId: fields[0], childId: fields[3] });
             }
         });
     }
 
     function loadElementParts (db, storeName)
     {
-        var objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-        objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
-
         $.get ('data/' + storeName + '.txt', function (data)
         {
             var lines = data.split ('\n');
 
-            objectStore.transaction.oncomplete = function (evnt)
+            var trx = db.transaction ([storeName], 'readwrite');
+            var objectStore = trx.objectStore (storeName);
+
+            // groupBy conceptId
+            var id, fileIds = [];
+            for (var i = 1; i < lines.length; i++)
             {
-                var trx = db.transaction ([storeName], 'readwrite');
-                var objectStore = trx.objectStore (storeName);
+                var fields = lines[i].split ('\t');
+                if (fields.length !== 3)
+                    continue;
 
-                // groupBy conceptId
-                var id, fileIds = [];
-                for (var i = 1; i < lines.length; i++)
+                if (id && id !== fields[0])
                 {
-                    var fields = lines[i].split ('\t');
-                    if (fields.length !== 3)
-                        continue;
-
-                    if (id && id !== fields[0])
-                    {
-                        objectStore.add ({ conceptId: id, elementFileIds: fileIds });
-                        fileIds = [];
-                    }
-
-                    id = fields[0];
-                    fileIds.push (fields[2]);
+                    objectStore.add ({ conceptId: id, elementFileIds: fileIds });
+                    fileIds = [];
                 }
-                objectStore.add ({ conceptId: id, elementFileIds: fileIds });
+
+                id = fields[0];
+                fileIds.push (fields[2]);
             }
+            objectStore.add ({ conceptId: id, elementFileIds: fileIds });
         });
     }
+
     this.search = function (str)
     {
         var li         = [],
@@ -121,7 +103,7 @@ function Ontology (sig)
             if (record.description.indexOf (str) !== -1)
             {
                 foundCount++;
-                li.push ('<li>' + record.conceptId + ', ' + record.description + '</li>');
+                li.push ('<li data-concept="' + record.conceptId + '" data-flag="isA">' + record.description + '</li>');
             }
 
             if (foundCount >= limit)
@@ -135,7 +117,7 @@ function Ontology (sig)
             if (record.description.indexOf (str) !== -1)
             {
                 foundCount++;
-                li.push ('<li>' + record.conceptId + ', ' + record.description + '</li>');
+                li.push ('<li data-concept="' + record.conceptId + '" data-flag="partOf">' + record.description + '</li>');
             }
 
             if (foundCount >= limit)
@@ -145,13 +127,31 @@ function Ontology (sig)
         $('#search-result').html (li.join (''));
         $('#search').prop ('disabled', false);
     };
+    
+    this.getIsAElementFileIds = function (conceptId)
+    {
+        var request = db.transaction ('isa_element_parts').objectStore ('isa_element_parts').get (conceptId);
+        request.onsuccess = function (evnt)
+        {
+            sig.dataRetrieved.dispatch (evnt.target.result.elementFileIds);
+        };
+    };
+
+    this.getPartOfElementFileIds = function (conceptId)
+    {
+        var request = db.transaction ('partof_element_parts').objectStore ('partof_element_parts').get (conceptId);
+        request.onsuccess = function (evnt)
+        {
+            sig.dataRetrieved.dispatch (evnt.target.result.elementFileIds);
+        };
+    };
 
     (function init ()
     {
-        sig.progressInitialized.dispatch ('Loading...', 10);
+        loadSearchablePartsList (isA,    'isa_parts_list_e');
+        loadSearchablePartsList (partOf, 'partof_parts_list_e');
 
-        loadSearchablePartsList (isA,    'isa_parts_list_e');    sig.progressUpdated.dispatch (1);
-        loadSearchablePartsList (partOf, 'partof_parts_list_e'); sig.progressUpdated.dispatch (2);
+        indexedDB.deleteDatabase (dbName); // while testing reload each time
 
         var request = indexedDB.open (dbName, dbVersion);
 
@@ -163,15 +163,46 @@ function Ontology (sig)
         request.onupgradeneeded = function (evnt)
         {
             var db = evnt.target.result;
+            var objectStore;
 
-            loadPartsList (db, 'isa_parts_list_e');    sig.progressUpdated.dispatch (3);
-            loadPartsList (db, 'partof_parts_list_e'); sig.progressUpdated.dispatch (4);
+            ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
+            {
+                objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+                objectStore.createIndex ('representationId', 'representationId', { unique: true });
+            });
 
-            loadInclusionRelationList (db, 'isa_inclusion_relation_list');    sig.progressUpdated.dispatch (5);
-            loadInclusionRelationList (db, 'partof_inclusion_relation_list'); sig.progressUpdated.dispatch (6);
+            ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+            {
+                objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
+                objectStore.createIndex ('parentId', 'parentId', { unique: false });
+                objectStore.createIndex ('childId',  'childId',  { unique: false });
+            });
 
-            loadElementParts (db, 'isa_element_parts');        sig.progressUpdated.dispatch (8);
-            loadElementParts (db, 'partof_element_parts.txt'); sig.progressUpdated.dispatch (10);
+
+            ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+            {
+                objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+                objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
+            });
+
+            objectStore.transaction.oncomplete = function (evnt)
+            {
+                ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
+                {
+                    loadPartsList (db, storeName);
+                });
+
+                ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+                {
+                    loadInclusionRelationList (db, storeName);
+                });
+
+
+                ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+                {
+                    loadElementParts (db, storeName);
+                });
+            };
         }
     }) ();
 }

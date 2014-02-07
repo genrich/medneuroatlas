@@ -1,12 +1,36 @@
 body
 {
-    font-family:      Arial, sans-serif;
+    font-family:      arial, sans-serif;
     font-size:        14px;
-    background-color: #AAAAAA;
+    background-color: #AAA;
     margin:           0;
     overflow:         hidden;
     margin:           0;
     padding:          0;
+}
+
+#help
+{
+    position:   fixed;
+    left:       0;
+    top:        0;
+    width:      100%;
+    height:     100%;
+    text-align: center;
+    z-index:    100;
+    opacity:    0.8;
+}
+
+#help table
+{
+    text-align:    left;
+    display:       inline-block;
+    overflow:      hidden;
+    border-radius: 10px;
+    padding:       20px;
+    margin:        50px;
+    color:         #FFF;
+    background:    #222;
 }
 
 #viewport
@@ -32,6 +56,22 @@ nav
     list-style-type: none;
     margin:          0;
     padding:         0;
+}
+
+#search-result li
+{
+    margin:  2px;
+    padding: 1px;
+}
+
+#search-result .ui-selected
+{
+    background: #CCC;
+}
+
+#search-result .ui-selecting
+{
+    background: #DDD;
 }
 
 footer

@@ -5,7 +5,8 @@ function main ()
     var sig =
     {
         progressInitialized: new SIGNALS.Signal (),
-        progressUpdated:     new SIGNALS.Signal ()
+        progressUpdated:     new SIGNALS.Signal (),
+        dataRetrieved:       new SIGNALS.Signal ()
     };
 
     (function initProgressBar ()
@@ -49,23 +50,85 @@ function main ()
             progressUI.progressbar ('value', val);
         });
 
-        progressDisableTimeout = setTimeout (disableProgressBar, 1);
     }) ();
 
-    var viewport = new Viewport ($('#viewport'));
+    var viewport = new Viewport (sig, $('#viewport'));
 
     var ontology = new Ontology (sig);
 
     (function initSeachDialog ()
     {
-        var searchUI = $('#search');
+        var searchUI       = $('#search'),
+            searchResultUI = $('#search-result');
         
+        searchResultUI.selectable ();
+
+        searchUI.keydown (function (evnt)
+        {
+            if (evnt.keyCode == 38 || evnt.keyCode == 40) 
+                evnt.preventDefault ();
+        });
+
         searchUI.keyup (function (evnt)
         {
-            if (evnt.keyCode == 13)
-                ontology.search (searchUI.val ());
+            switch (evnt.keyCode)
+            {
+            case 13: // enter
+                if (evnt.ctrlKey)
+                {
+                    var selected = $('.ui-selected', searchResultUI);
+                    if (selected.length)
+                    {
+                        if (selected.data ('flag') == 'isA')
+                            ontology.getIsAElementFileIds    (selected.data ('concept'));
+                        else
+                            ontology.getPartOfElementFileIds (selected.data ('concept'));
+                    }
+                }
+                else
+                {
+                    ontology.search (searchUI.val ());
+                }
+                break;
+            case 38: // up
+                var selected = $('.ui-selected', searchResultUI);
+                    last     = $('li:last',      searchResultUI);
+                if (selected.length)
+                {
+                    selected.removeClass ('ui-selected');
+                    (selected.prev ('li').length ? selected.prev ('li') : last).addClass ('ui-selected');
+                }
+                else
+                {
+                    last.addClass ('ui-selected');
+                }
+                break;
+            case 40: // down
+                var selected = $('.ui-selected',   searchResultUI);
+                    first    = $('li:first-child', searchResultUI);
+                if (selected.length)
+                {
+                    selected.removeClass ('ui-selected');
+                    (selected.next ('li').length ? selected.next ('li') : first).addClass ('ui-selected');
+                }
+                else
+                {
+                    first.addClass ('ui-selected');
+                }
+                break;
+            }
         });
 
         searchUI.focus ();
     }) ();
+
+    $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
+    $(document).keydown (function (evnt)
+    {
+        if (evnt.keyCode == 191) // show help for question mark ?
+        {
+            $('#help').toggle ();
+            evnt.preventDefault ();
+        }
+    });
 }

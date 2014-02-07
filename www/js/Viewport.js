@@ -1,6 +1,8 @@
-function Viewport (container)
+function Viewport (sig, container)
 {
-    var camera, scene, renderer, controls;
+    var camera, scene, renderer, controls,
+        loader = new THREE.BinaryLoader (),
+        objects = [];
 
     function onWindowResize ()
     {
@@ -8,6 +10,33 @@ function Viewport (container)
         camera.updateProjectionMatrix ();
 
         renderer.setSize (container.width (), container.height ());
+    }
+
+    function createMesh (geometry, materials)
+    {
+        var object = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({color: 0x777777}));
+        objects.push (object);
+        scene.add (object);
+    }
+
+    function load (elementFileIds)
+    {
+        console.log ('load: ' + elementFileIds);
+
+        objects.forEach (function (object)
+        {
+            scene.remove (object);
+            object.geometry.dispose ();
+            object.material.dispose ();
+        });
+
+        objects = [];
+
+        elementFileIds.forEach (function (elementFileId)
+        {
+            var fileUrl = 'data/bin/' + elementFileId + '.js';
+            $.ajax ({ url: fileUrl, type: 'HEAD', success: function () { loader.load (fileUrl, createMesh); }});
+        });
     }
 
     if (! Detector.webgl) return Detector.addGetWebGLMessage ();
@@ -36,22 +65,6 @@ function Viewport (container)
         container.append (renderer.domElement);
 
         window.addEventListener ('resize', onWindowResize, false);
-
-        var loader = new THREE.BinaryLoader ();
-        loader.load ("data/bin/FJ3199.js", createMesh);
-        $('#progressbar').progressbar ({ value: 20 });
-        loader.load ("data/bin/FJ3200.js", createMesh);
-        $('#progressbar').progressbar ({ value: 40 });
-        loader.load ("data/bin/FJ3274.js", createMesh);
-        loader.load ("data/bin/FJ3281.js", createMesh);
-        loader.load ("data/bin/FJ3309.js", createMesh);
-        loader.load ("data/bin/FJ3380.js", createMesh);
-        loader.load ("data/bin/FJ3386.js", createMesh);
-
-        function createMesh (geometry, materials)
-        {
-            scene.add (new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({color: 0x777777})));
-        }
     }) ();
 
     (function animate ()
@@ -61,4 +74,8 @@ function Viewport (container)
 
         requestAnimationFrame (animate);
     }) ();
+
+    sig.dataRetrieved.add (function (elementFileIds) { load (elementFileIds); });
+
+    load (['FJ3199', 'FJ3200', 'FJ3274', 'FJ3281', 'FJ3309', 'FJ3380', 'FJ3386']);
 };
