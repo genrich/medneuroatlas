@@ -7,7 +7,7 @@ function Ontology (sig)
         isA       = [],
         partOf    = [];
 
-    function loadSearchablePartsList (arrayName, fileName)
+    function loadSearchablePartsList (type, fileName)
     {
         $.get ('data/' + fileName + '.txt', function (data)
         {
@@ -17,7 +17,7 @@ function Ontology (sig)
             {
                 var fields = lines[i].split ('\t');
                 if (fields.length === 3)
-                    arrayName.push ({ conceptId: fields[0], description: fields[2] });
+                    localStorage.setItem (type + '.' + fields[0], fields[2]);
             }
         });
     }
@@ -93,31 +93,19 @@ function Ontology (sig)
         var li         = [],
             count      = 0,
             foundCount = 0;
-        const limit = 10;
+        const limit = 30;
 
         $('#search').prop ('disabled', true);
 
-        for (var i = 0; i < isA.length; i++)
+        for (var i = 0; i < localStorage.length; i++)
         {
-            var record = isA[i];
-            if (record.description.indexOf (str) !== -1)
+            var key = localStorage.key (i); // key = '(isA|partOf).FMA123'
+            var description = localStorage.getItem (key);
+            if (description.indexOf (str) !== -1)
             {
                 foundCount++;
-                li.push ('<li data-concept="' + record.conceptId + '" data-flag="isA">' + record.description + '</li>');
-            }
-
-            if (foundCount >= limit)
-                break;
-        }
-
-        foundCount = 0;
-        for (var i = 0; i < partOf.length; i++)
-        {
-            var record = partOf[i];
-            if (record.description.indexOf (str) !== -1)
-            {
-                foundCount++;
-                li.push ('<li data-concept="' + record.conceptId + '" data-flag="partOf">' + record.description + '</li>');
+                var vals = key.split ('.');
+                li.push ('<li data-flag="' + vals[0] + '" data-concept="' + vals[1] + '">' + description + '</li>');
             }
 
             if (foundCount >= limit)
@@ -149,11 +137,6 @@ function Ontology (sig)
 
     (function init ()
     {
-        loadSearchablePartsList (isA,    'isa_parts_list_e');
-        loadSearchablePartsList (partOf, 'partof_parts_list_e');
-
-        indexedDB.deleteDatabase (dbName); // while testing reload each time
-
         var request = indexedDB.open (dbName, dbVersion);
 
         request.onsuccess = function (evnt)
@@ -203,7 +186,17 @@ function Ontology (sig)
                 {
                     loadElementParts (db, storeName);
                 });
+
+                localStorage.clear ();
+                loadSearchablePartsList ('isA',    'isa_parts_list_e');
+                loadSearchablePartsList ('partOf', 'partof_parts_list_e');
             };
+        }
+
+        if (localStorage.length == 0)
+        {
+            loadSearchablePartsList ('isA',    'isa_parts_list_e');
+            loadSearchablePartsList ('partOf', 'partof_parts_list_e');
         }
     }) ();
 }
