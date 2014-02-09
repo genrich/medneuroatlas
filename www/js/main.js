@@ -6,7 +6,9 @@ function main ()
     {
         progressInitialized: new SIGNALS.Signal (),
         progressUpdated:     new SIGNALS.Signal (),
-        dataRetrieved:       new SIGNALS.Signal ()
+        dataRetrieved:       new SIGNALS.Signal (),
+        selected:            new SIGNALS.Signal ()
+
     };
 
     (function initProgressBar ()
@@ -78,12 +80,13 @@ function main ()
                 {
                     var selected = $('.ui-selected', searchResultUI);
                     if (selected.length)
-                    {
-                        if (selected.data ('flag') == 'isA')
-                            ontology.getIsAElementFileIds    (selected.data ('concept'));
-                        else
-                            ontology.getPartOfElementFileIds (selected.data ('concept'));
-                    }
+                        sig.selected.dispatch (selected.data ('flag'), false, selected.data ('concept'));
+                }
+                else if (evnt.shiftKey)
+                {
+                    var selected = $('.ui-selected', searchResultUI);
+                    if (selected.length)
+                        sig.selected.dispatch (selected.data ('flag'), true, selected.data ('concept'));
                 }
                 else
                 {

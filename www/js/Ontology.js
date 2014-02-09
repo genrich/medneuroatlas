@@ -117,25 +117,25 @@ function Ontology (sig)
         $('#search').prop ('disabled', false);
     };
     
-    this.getIsAElementFileIds = function (conceptId)
+    function processIsAElementFileIds (isTransparent, conceptId)
     {
         var request = db.transaction ('isa_element_parts').objectStore ('isa_element_parts').get (conceptId);
         request.onsuccess = function (evnt)
         {
-            sig.dataRetrieved.dispatch (evnt.target.result.elementFileIds);
+            sig.dataRetrieved.dispatch (isTransparent, evnt.target.result.elementFileIds);
         };
     };
 
-    this.getPartOfElementFileIds = function (conceptId)
+    function processPartOfElementFileIds (isTransparent, conceptId)
     {
         var request = db.transaction ('partof_element_parts').objectStore ('partof_element_parts').get (conceptId);
         request.onsuccess = function (evnt)
         {
-            sig.dataRetrieved.dispatch (evnt.target.result.elementFileIds);
+            sig.dataRetrieved.dispatch (isTransparent, evnt.target.result.elementFileIds);
         };
     };
 
-    (function init ()
+    (function initData ()
     {
         var request = indexedDB.open (dbName, dbVersion);
 
@@ -199,4 +199,12 @@ function Ontology (sig)
             loadSearchablePartsList ('partOf', 'partof_parts_list_e');
         }
     }) ();
+
+    sig.selected.add (function (type, isTransparent, conceptId)
+    {
+        if (type == 'isA')
+            processIsAElementFileIds (isTransparent, conceptId);
+        else
+            processPartOfElementFileIds (isTransparent, conceptId);
+    });
 }
