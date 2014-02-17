@@ -28,10 +28,16 @@
         </div>
         <div id="viewport"></div>
         <nav>
-            <section>
+            <div>
                 <label for="search">Search: </label><input id="search" autocomplete="off">
-            </section>
+            </div>
             <ul id="search-result"></ul>
+            <table id="controls">
+                <tr><td colspan="2"><button id="light_touch_pathway_show">Light touch pathway</button></td></tr>
+                <tr><td colspan="2"><button id="pain_and_temperature_pathway_show">Pain and temperature pathway</button></td></tr>
+                <tr><td colspan="2"><button id="face_light_touch_pathway_show">Face light touch pathway</button></td></tr>
+                <tr><td><button id="pathway_play"></button></td><td><button id="pathway_clear">Clear</button></td></tr>
+            </table>
         </nav>
         <footer>
             <div id="progressbar"><div class="progress-label"></div></div>

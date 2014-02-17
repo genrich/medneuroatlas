@@ -42,6 +42,68 @@ body
     bottom:   16px;
 }
 
+#controls
+{
+    bottom:   0;
+    width:    100%;
+}
+
+.text3d
+{
+    font-size:     12px;
+    position:      absolute;
+    padding:       3px;
+    border:        1px solid;
+    border-radius: 0px 7px 7px 7px;
+    z-index:       10;
+}
+
+.text3dX
+{
+    font-size:     12px;
+    position:      absolute;
+    padding:       3px;
+    border:        1px solid;
+    border-radius: 7px 7px 0px 7px;
+    z-index:       10;
+}
+
+.text3dL
+{
+    font-size:     12px;
+    position:      absolute;
+    padding:       3px;
+    border:        1px solid;
+    border-radius: 7px 0px 7px 7px;
+    z-index:       10;
+}
+
+.text3dT
+{
+    font-size:     12px;
+    position:      absolute;
+    padding:       3px;
+    border:        1px solid;
+    border-radius: 7px 7px 7px 0px;
+    z-index:       10;
+}
+
+.soma3d
+{
+    position: absolute;
+    height:   30px;
+    width:    30px;
+    margin:   -15px -15px;
+}
+
+.synapse3d
+{
+    position: absolute;
+    height:   18px;
+    width:    18px;
+    margin:   -9px -9px;
+}
+
 nav
 {
     position: absolute;
@@ -72,6 +134,18 @@ nav
 #search-result .ui-selecting
 {
     background: #DDD;
+}
+
+button
+{
+    width: 100%;
+}
+
+#controls
+{
+    position: absolute;
+    bottom:   0;
+    right:    0;
 }
 
 footer

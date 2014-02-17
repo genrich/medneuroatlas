@@ -4,11 +4,15 @@ function main ()
 
     var sig =
     {
-        progressInitialized: new SIGNALS.Signal (),
-        progressUpdated:     new SIGNALS.Signal (),
-        dataRetrieved:       new SIGNALS.Signal (),
-        selected:            new SIGNALS.Signal ()
-
+        progressInitialized:           new SIGNALS.Signal (),
+        progressUpdated:               new SIGNALS.Signal (),
+        dataRetrieved:                 new SIGNALS.Signal (),
+        selected:                      new SIGNALS.Signal (),
+        lightTouchPathwayShow:         new SIGNALS.Signal (),
+        painAndTemperaturePathwayShow: new SIGNALS.Signal (),
+        faceLightTouchPathwayShow:     new SIGNALS.Signal (),
+        pathwayPlay:                   new SIGNALS.Signal (),
+        pathwayClear:                  new SIGNALS.Signal (),
     };
 
     (function initProgressBar ()
@@ -55,7 +59,6 @@ function main ()
     }) ();
 
     var viewport = new Viewport (sig, $('#viewport'));
-
     var ontology = new Ontology (sig);
 
     (function initSeachDialog ()
@@ -125,13 +128,27 @@ function main ()
         searchUI.focus ();
     }) ();
 
-    $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
-    $(document).keydown (function (evnt)
+    (function initPathwayControls ()
     {
-        if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
+        $('#light_touch_pathway_show')         .button ().click (function (evnt) { sig.lightTouchPathwayShow        .dispatch (); });
+        $('#pain_and_temperature_pathway_show').button ().click (function (evnt) { sig.painAndTemperaturePathwayShow.dispatch (); });
+        $('#face_light_touch_pathway_show')    .button ().click (function (evnt) { sig.faceLightTouchPathwayShow    .dispatch (); });
+        $('#pathway_clear')                    .button ().click (function (evnt) { sig.pathwayClear                 .dispatch (); });
+
+        $('#pathway_play').button ({ disabled: true, text: false, icons: { primary: "ui-icon-play" }})
+                          .click  (function (evnt) { sig.pathwayPlay.dispatch (); });
+    }) ();
+
+    (function initHelp ()
+    {
+        $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
+        $(document).keydown (function (evnt)
         {
-            $('#help').toggle ();
-            evnt.preventDefault ();
-        }
-    });
+            if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
+            {
+                $('#help').toggle ();
+                evnt.preventDefault ();
+            }
+        });
+    }) ();
 }
