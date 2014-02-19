@@ -100,7 +100,7 @@ function Viewport (sig, container)
         camera.position.set (0, -300, 1500);
         camera.up.set (0, 0, 1);
 
-        controls = new THREE.TrackballControls (camera);
+        controls = new THREE.TrackballControls (camera, container[0]);
         controls.target.set (0, -100, 1500);
 
         scene = new THREE.Scene ();
