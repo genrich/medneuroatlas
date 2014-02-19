@@ -11,6 +11,7 @@ body
 
 #help
 {
+    display:    table;
     position:   fixed;
     left:       0;
     top:        0;
@@ -21,14 +22,20 @@ body
     opacity:    0.8;
 }
 
-#help table
+#help div
+{
+    display:        table-cell;
+    vertical-align: middle;
+}
+
+#help div table
 {
     text-align:    left;
-    display:       inline-block;
     overflow:      hidden;
     border-radius: 10px;
     padding:       20px;
-    margin:        50px;
+    margin-left:   auto;
+    margin-right:  auto;
     color:         #FFF;
     background:    #222;
 }
