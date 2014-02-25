@@ -92,7 +92,7 @@ function Viewport (sig, container)
         return vector;
     }
 
-    if (! Detector.webgl) return Detector.addGetWebGLMessage ();
+    if (! Detector.webgl) return Detector.addGetWebGLMessage ({ parent: container[0] });
 
     (function initThreeJs ()
     {

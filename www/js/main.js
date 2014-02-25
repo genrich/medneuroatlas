@@ -15,6 +15,30 @@ function main ()
         pathwayClear:                  new SIGNALS.Signal (),
     };
 
+    (function initHelp ()
+    {
+        $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
+        $(document).keydown (function (evnt)
+        {
+            if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
+            {
+                $('#help').toggle ();
+                evnt.preventDefault ();
+            }
+        });
+    }) ();
+
+    (function initPathwayControls ()
+    {
+        $('#light_touch_pathway_show')         .button ().click (function (evnt) { sig.lightTouchPathwayShow        .dispatch (); });
+        $('#pain_and_temperature_pathway_show').button ().click (function (evnt) { sig.painAndTemperaturePathwayShow.dispatch (); });
+        $('#face_light_touch_pathway_show')    .button ().click (function (evnt) { sig.faceLightTouchPathwayShow    .dispatch (); });
+        $('#pathway_clear')                    .button ().click (function (evnt) { sig.pathwayClear                 .dispatch (); });
+
+        $('#pathway_play').button ({ disabled: true, text: false, icons: { primary: "ui-icon-play" }})
+                          .click  (function (evnt) { sig.pathwayPlay.dispatch (); });
+    }) ();
+
     (function initProgressBar ()
     {
         var progressUI      = $('#progressbar'),
@@ -57,9 +81,6 @@ function main ()
         });
 
     }) ();
-
-    var viewport = new Viewport (sig, $('#viewport'));
-    var ontology = new Ontology (sig);
 
     (function initSeachDialog ()
     {
@@ -128,27 +149,16 @@ function main ()
         searchUI.focus ();
     }) ();
 
-    (function initPathwayControls ()
-    {
-        $('#light_touch_pathway_show')         .button ().click (function (evnt) { sig.lightTouchPathwayShow        .dispatch (); });
-        $('#pain_and_temperature_pathway_show').button ().click (function (evnt) { sig.painAndTemperaturePathwayShow.dispatch (); });
-        $('#face_light_touch_pathway_show')    .button ().click (function (evnt) { sig.faceLightTouchPathwayShow    .dispatch (); });
-        $('#pathway_clear')                    .button ().click (function (evnt) { sig.pathwayClear                 .dispatch (); });
+    var viewport = new Viewport (sig, $('#viewport'));
 
-        $('#pathway_play').button ({ disabled: true, text: false, icons: { primary: "ui-icon-play" }})
-                          .click  (function (evnt) { sig.pathwayPlay.dispatch (); });
-    }) ();
-
-    (function initHelp ()
+    if (! window.indexedDB)
     {
-        $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
-        $(document).keydown (function (evnt)
-        {
-            if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
-            {
-                $('#help').toggle ();
-                evnt.preventDefault ();
-            }
-        });
-    }) ();
+        var element = Detector.getWebGLErrorMessage ();
+        element.innerHTML = "Your browser doesn't support the Indexed Database API. Please use a browser with better support for "
+                            + " <a href='http://caniuse.com/indexeddb' style='color:#000'>IndexedDB</a>";
+        $('#viewport').append (element);
+        throw 'IndexedDB not supported';
+    }
+
+    var ontology = new Ontology (sig);
 }
