@@ -192,6 +192,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
+        load (false, []);
         load (true, ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176', 'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782']);
     });
 
@@ -252,6 +253,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
+        load (false, []);
         load (true, ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176', 'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782']);
     });
 
@@ -310,6 +312,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (-62.3792, -77.2263, 1575.3464) });
         addLabels ();
 
+        load (false, []);
         load (true, ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
                 'FJ1312', 'FJ1315', 'FJ1318', 'FJ1325', 'FJ1326', 'FJ1333', 'FJ1341', 'FJ1347', 'FJ1351', 'FJ1361', 'FJ1362',
                 'FJ1363', 'FJ1366', 'FJ1369', 'FJ1376', 'FJ1377',
