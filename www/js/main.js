@@ -8,12 +8,14 @@ function main ()
         progressUpdated:               new SIGNALS.Signal (),
         dataRetrieved:                 new SIGNALS.Signal (),
         selected:                      new SIGNALS.Signal (),
+        organsInitialized:             new SIGNALS.Signal (),
         lightTouchPathwayShow:         new SIGNALS.Signal (),
         painAndTemperaturePathwayShow: new SIGNALS.Signal (),
         faceLightTouchPathwayShow:     new SIGNALS.Signal (),
         pathwayPlay:                   new SIGNALS.Signal (),
         pathwayClear:                  new SIGNALS.Signal (),
     };
+    sig.organsInitialized.memorize = true;
 
     (function initHelp ()
     {
@@ -161,4 +163,22 @@ function main ()
     }
 
     var ontology = new Ontology (sig);
+
+    if (location.hash)
+    {
+        var str = location.hash.substring (1);
+        var strs = str.split ('|'); if (strs.length != 2) return;
+
+        var solidOrgan       = strs[0];
+        var transparentOrgan = strs[1];
+
+        var solid = solidOrgan.split ('.');       if (strs.length != 2) return;
+        var trans = transparentOrgan.split ('.'); if (strs.length != 2) return;
+
+        sig.organsInitialized.dispatch (solid[0], solid[1], trans[0], trans[1]);
+    }
+    else
+    {
+        sig.organsInitialized.dispatch ('partOf', 'FMA50801', 'partOf', 'FMA53672');
+    }
 }

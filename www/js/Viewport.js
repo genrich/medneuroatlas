@@ -34,8 +34,6 @@ function Viewport (sig, container)
 
     function load (isTransparent, elementFileIds)
     {
-        console.log ('load: ' + elementFileIds);
-
         if (isTransparent)
         {
             transparentObjects.forEach (function (object)
@@ -437,6 +435,4 @@ function Viewport (sig, container)
 
         requestAnimationFrame (animate);
     }) ();
-
-    load (true, ['FJ3199', 'FJ3200', 'FJ3274', 'FJ3281', 'FJ3309', 'FJ3380', 'FJ3386']);
 };

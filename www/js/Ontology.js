@@ -1,7 +1,6 @@
 function Ontology (sig)
 {
-    var db,
-        dbName    = 'medneuroatlas',
+    var dbName    = 'medneuroatlas',
         dbVersion = 1,
         // {conceptId: 'FMA123', description: 'organ name'}
         isA       = [],
@@ -117,7 +116,7 @@ function Ontology (sig)
         $('#search').prop ('disabled', false);
     };
     
-    function processIsAElementFileIds (isTransparent, conceptId)
+    function processIsAElementFileIds (db, isTransparent, conceptId)
     {
         var request = db.transaction ('isa_element_parts').objectStore ('isa_element_parts').get (conceptId);
         request.onsuccess = function (evnt)
@@ -126,7 +125,7 @@ function Ontology (sig)
         };
     };
 
-    function processPartOfElementFileIds (isTransparent, conceptId)
+    function processPartOfElementFileIds (db, isTransparent, conceptId)
     {
         var request = db.transaction ('partof_element_parts').objectStore ('partof_element_parts').get (conceptId);
         request.onsuccess = function (evnt)
@@ -141,7 +140,22 @@ function Ontology (sig)
 
         request.onsuccess = function (evnt)
         {
-            db = evnt.target.result;
+            var db = evnt.target.result;
+
+            sig.selected.add (function (type, isTransparent, conceptId)
+            {
+                console.log (type + '.' + conceptId);
+                if (type == 'isA')    processIsAElementFileIds    (db, isTransparent, conceptId);
+                if (type == 'partOf') processPartOfElementFileIds (db, isTransparent, conceptId);
+            });
+
+            sig.organsInitialized.add (function (solidType, solidConceptId, transType, transConceptId)
+            {
+                if (solidType == 'isA')    processIsAElementFileIds    (db, false, solidConceptId);
+                if (solidType == 'partOf') processPartOfElementFileIds (db, false, solidConceptId);
+                if (transType == 'isA')    processIsAElementFileIds    (db, true,  transConceptId);
+                if (transType == 'partOf') processPartOfElementFileIds (db, true,  transConceptId);
+            });
         }
 
         request.onupgradeneeded = function (evnt)
@@ -199,12 +213,4 @@ function Ontology (sig)
             loadSearchablePartsList ('partOf', 'partof_parts_list_e');
         }
     }) ();
-
-    sig.selected.add (function (type, isTransparent, conceptId)
-    {
-        if (type == 'isA')
-            processIsAElementFileIds (isTransparent, conceptId);
-        else
-            processPartOfElementFileIds (isTransparent, conceptId);
-    });
 }
