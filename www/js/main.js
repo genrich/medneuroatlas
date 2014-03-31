@@ -166,7 +166,7 @@ function main ()
 
     if (location.hash)
     {
-        var str = location.hash.substring (1);
+        var str = decodeURI (location.hash.substring (1));
         var strs = str.split ('|'); if (strs.length != 2) return;
 
         var solidOrgan       = strs[0];
