@@ -17,9 +17,36 @@ function main ()
     };
     sig.organsInitialized.memorize = true;
 
+    function initView ()
+    {
+        if (location.hash)
+        {
+            var str = decodeURI (location.hash.substring (1));
+            var strs = str.split ('|'); if (strs.length != 2) return;
+
+            var solidOrgan       = strs[0];
+            var transparentOrgan = strs[1];
+
+            var solid = solidOrgan.split ('.');       if (strs.length != 2) return;
+            var trans = transparentOrgan.split ('.'); if (strs.length != 2) return;
+
+            sig.organsInitialized.dispatch (solid[0], solid[1], trans[0], trans[1]);
+        }
+        else
+        {
+            sig.organsInitialized.dispatch ('partOf', 'FMA50801', 'partOf', 'FMA53672');
+        }
+    }
+
     (function initHelp ()
     {
-        $('#help').fadeTo (5000, 0, function () { $(this).hide (); $(this).css ('opacity', '0.7'); });
+        $('#help').fadeTo (5000, 0, function ()
+        {
+            $(this).hide ();
+            $(this).css ('opacity', '0.7');
+            initView ();
+        });
+
         $(document).keydown (function (evnt)
         {
             if (evnt.keyCode == 63 || evnt.keyCode == 191) // show help for question mark ?
@@ -163,22 +190,4 @@ function main ()
     }
 
     var ontology = new Ontology (sig);
-
-    if (location.hash)
-    {
-        var str = decodeURI (location.hash.substring (1));
-        var strs = str.split ('|'); if (strs.length != 2) return;
-
-        var solidOrgan       = strs[0];
-        var transparentOrgan = strs[1];
-
-        var solid = solidOrgan.split ('.');       if (strs.length != 2) return;
-        var trans = transparentOrgan.split ('.'); if (strs.length != 2) return;
-
-        sig.organsInitialized.dispatch (solid[0], solid[1], trans[0], trans[1]);
-    }
-    else
-    {
-        sig.organsInitialized.dispatch ('partOf', 'FMA50801', 'partOf', 'FMA53672');
-    }
 }
