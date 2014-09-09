@@ -4,22 +4,65 @@
         <title>Medical Neuroscience Atlas, WebGL 3D Brain</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
         <link rel="stylesheet" href="css/styles.css">
-        <script src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
-        <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.min.js"></script>
-        <script src="lib/three.js"></script>
+        <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+        <script src="http://code.jquery.com/ui/1.11.1/jquery-ui.min.js"></script>
+        <script src="lib/three.min.js"></script>
         <script src="lib/signals.min.js"></script>
         <script src="js/main.js"></script>
+        <script src="js/TabsControl.js"></script>
         <script src="js/Viewport.js"></script>
         <script src="js/Ontology.js"></script>
     </head>
 	<body onload="main()">
-        <div id="help">
-            <div>
+        <div id="tabs">
+            <ul>
+                <li><a href="#loaded-tab">Loaded</a></li>
+                <li><a href="#search-tab">Search</a></li>
+                <li><a href="#pathways-tab">Pathways</a></li>
+                <li><a href="#help-tab">Help</a></li>
+            </ul>
+            <div id="loaded-tab">
+                <div id="toolbar" class="ui-widget-header ui-corner-all">
+                    <span id="toolbar-transparent">
+                        <button id="clear-all-transparent">clear all transparent</button>
+                        <button id="load-transparent">load transparent</button>
+                        <button id="clear-transparent">clear transparent</button>
+                    </span>
+                    <span id="toolbar-opaque">
+                        <button id="load-opaque">load opaque</button>
+                        <button id="clear-opaque">clear opaque</button>
+                        <button id="clear-all-opaque">clear all opaque</button>
+                    </span>
+                </div>
+                <ul id="loaded-result"></ul>
+            </div>
+            <div id="search-tab">
+                <div id="load-type">
+                    <input type="radio" id="radio-transparent" name="radio" checked="checked"><label for="radio-transparent">Transparent</label>
+                    <input type="radio" id="radio-opaque" name="radio"><label for="radio-opaque">Opaque</label>
+                </div>
+                <button id="search-btn" tabindex="2">Search</button>
+                <div id="search-div">
+                    <input id="search-text" type="text" tabindex="1" autocomplete="off">
+                </div>
+                <ul id="search-result"></ul>
+            </div>
+            <div id="pathways-tab">
+                <table id="controls">
+                    <tr><td colspan="2"><button id="light_touch_pathway_show">Light touch pathway</button></td></tr>
+                    <tr><td colspan="2"><button id="pain_and_temperature_pathway_show">Pain and temperature pathway</button></td></tr>
+                    <tr><td colspan="2"><button id="face_light_touch_pathway_show">Face light touch pathway</button></td></tr>
+                    <tr><td><button id="pathway_play"></button></td><td><button id="pathway_clear">Clear</button></td></tr>
+                </table>
+            </div>
+            <div id="help-tab">
                 <table>
-                    <tr><th colspan="3">? - toggle help window</th></tr>
-                    <tr><td colspan="3">While focused in the search input field</td></tr>
+                    <tr><td>#</td><td> - </td><td>jump to loaded tab</td></tr>
+                    <tr><td>/</td><td> - </td><td>jump to search tab</td></tr>
+                    <tr><td>Esc/Active tab click</td><td> - </td><td>collapse tabs</td></tr>
+                    <tr><td colspan="3">While focused in the search input field:</td></tr>
                     <tr><td>Enter</td><td> - </td><td>search for substring</td></tr>
                     <tr><td>Down</td><td> - </td><td>select next</td></tr>
                     <tr><td>Up</td><td> - </td><td>select previous</td></tr>
@@ -29,18 +72,6 @@
             </div>
         </div>
         <div id="viewport"></div>
-        <nav>
-            <div>
-                <label for="search">Search: </label><input id="search" autocomplete="off">
-            </div>
-            <ul id="search-result"></ul>
-            <table id="controls">
-                <tr><td colspan="2"><button id="light_touch_pathway_show">Light touch pathway</button></td></tr>
-                <tr><td colspan="2"><button id="pain_and_temperature_pathway_show">Pain and temperature pathway</button></td></tr>
-                <tr><td colspan="2"><button id="face_light_touch_pathway_show">Face light touch pathway</button></td></tr>
-                <tr><td><button id="pathway_play"></button></td><td><button id="pathway_clear">Clear</button></td></tr>
-            </table>
-        </nav>
         <footer>
             <div id="progressbar"><div class="progress-label"></div></div>
             <div id="copyright">

@@ -1,110 +1,89 @@
-function Ontology (sig)
+function Ontology ()
 {
-    var dbName    = 'medneuroatlas',
-        dbVersion = 1,
-        // {conceptId: 'FMA123', description: 'organ name'}
-        isA       = [],
-        partOf    = [];
+    const dbName = 'medneuroatlas', dbVersion = 1; // TODO version upgrade
 
-    function loadSearchablePartsList (type, fileName)
+    var dbOpened = $.Deferred (),
+        dbUpgraded, dbDataLoaded = [];
+
+    var request = indexedDB.open (dbName, dbVersion);
+    request.onsuccess = function (evnt)
     {
-        $.get ('data/' + fileName + '.txt', function (data)
-        {
-            var lines = data.split ('\n');
-
-            for (var i = 1; i < lines.length; i++)
-            {
-                var fields = lines[i].split ('\t');
-                if (fields.length === 3)
-                    localStorage.setItem (type + '.' + fields[0], fields[2]);
-            }
-        });
+        if (dbUpgraded)
+            $.when.apply ($, dbDataLoaded).then (function () { dbOpened.resolve (evnt.target.result); });
+        else
+            dbOpened.resolve (evnt.target.result);
     }
 
-    function loadPartsList (db, storeName)
+    request.onupgradeneeded = function (evnt)
     {
-        $.get ('data/' + storeName + '.txt', function (data)
+        dbUpgraded = $.Deferred ();
+        var db = evnt.target.result;
+        var objectStore;
+
+        ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
         {
-            var lines = data.split ('\n');
-
-            var trx = db.transaction ([storeName], 'readwrite');
-            var objectStore = trx.objectStore (storeName);
-
-            for (var i = 1; i < lines.length; i++)
-            {
-                var fields = lines[i].split ('\t');
-                if (fields.length === 3)
-                objectStore.add ({ conceptId: fields[0], representationId: fields[1], description: fields[2] });
-            }
+            objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+            objectStore.createIndex ('representationId', 'representationId', { unique: true });
         });
+
+        ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+        {
+            objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
+            objectStore.createIndex ('parentId', 'parentId', { unique: false });
+            objectStore.createIndex ('childId',  'childId',  { unique: false });
+        });
+
+        ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+        {
+            objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+            objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
+        });
+
+        objectStore.transaction.oncomplete = function ()
+        {
+            ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
+            {
+                dbDataLoaded.push (loadPartsList (db, storeName));
+            });
+
+            ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+            {
+                dbDataLoaded.push (loadInclusionRelationList (db, storeName));
+            });
+
+
+            ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+            {
+                dbDataLoaded.push (loadElementParts (db, storeName));
+            });
+
+            localStorage.clear ();
+            loadSearchablePartsList ('isa',    'isa_parts_list_e');
+            loadSearchablePartsList ('partof', 'partof_parts_list_e');
+        };
     }
 
-    function loadInclusionRelationList (db, storeName)
+    if (localStorage.length == 0)
     {
-        $.get ('data/' + storeName + '.txt', function (data)
-        {
-            var lines = data.split ('\n');
-
-            var trx = db.transaction ([storeName], 'readwrite');
-            var objectStore = trx.objectStore (storeName);
-
-            for (var i = 1; i < lines.length; i++)
-            {
-                var fields = lines[i].split ('\t');
-                if (fields.length === 4)
-                objectStore.add ({ parentId: fields[0], childId: fields[3] });
-            }
-        });
-    }
-
-    function loadElementParts (db, storeName)
-    {
-        $.get ('data/' + storeName + '.txt', function (data)
-        {
-            var lines = data.split ('\n');
-
-            var trx = db.transaction ([storeName], 'readwrite');
-            var objectStore = trx.objectStore (storeName);
-
-            // groupBy conceptId
-            var id, fileIds = [];
-            for (var i = 1; i < lines.length; i++)
-            {
-                var fields = lines[i].split ('\t');
-                if (fields.length !== 3)
-                    continue;
-
-                if (id && id !== fields[0])
-                {
-                    objectStore.add ({ conceptId: id, elementFileIds: fileIds });
-                    fileIds = [];
-                }
-
-                id = fields[0];
-                fileIds.push (fields[2]);
-            }
-            objectStore.add ({ conceptId: id, elementFileIds: fileIds });
-        });
+        loadSearchablePartsList ('isa',    'isa_parts_list_e');
+        loadSearchablePartsList ('partof', 'partof_parts_list_e');
     }
 
     this.search = function (str)
     {
-        var li         = [],
-            count      = 0,
-            foundCount = 0;
+        var li = [], foundCount = 0;
         const limit = 30;
 
         $('#search').prop ('disabled', true);
 
         for (var i = 0; i < localStorage.length; i++)
         {
-            var key = localStorage.key (i); // key = '(isA|partOf).FMA123'
+            var key = localStorage.key (i); // key = '(isa|partof).FMA123'
             var description = localStorage.getItem (key);
             if (description.indexOf (str) !== -1)
             {
-                foundCount++;
-                var vals = key.split ('.');
-                li.push ('<li data-flag="' + vals[0] + '" data-concept="' + vals[1] + '">' + description + '</li>');
+                ++foundCount;
+                li.push ('<li data-concept="' + key + '" class="ui-selectee">' + description + '</li>');
             }
 
             if (foundCount >= limit)
@@ -113,104 +92,187 @@ function Ontology (sig)
 
         $('#search-result').html (li.join (''));
         $('#search-result li:first-child').addClass ('ui-selected');
+
         $('#search').prop ('disabled', false);
     };
-    
-    function processIsAElementFileIds (db, isTransparent, conceptId)
+
+    this.conceptRetrieved = function (treeConceptId)
     {
-        var request = db.transaction ('isa_element_parts').objectStore ('isa_element_parts').get (conceptId);
-        request.onsuccess = function (evnt)
+        var deferred = $.Deferred ();
+
+        dbOpened.done (function (db)
         {
-            sig.dataRetrieved.dispatch (isTransparent, evnt.target.result.elementFileIds);
-        };
-    };
+            var concept = parseConcept (treeConceptId);
+            var storeName = concept.tree + '_element_parts';
 
-    function processPartOfElementFileIds (db, isTransparent, conceptId)
-    {
-        var request = db.transaction ('partof_element_parts').objectStore ('partof_element_parts').get (conceptId);
-        request.onsuccess = function (evnt)
-        {
-            sig.dataRetrieved.dispatch (isTransparent, evnt.target.result.elementFileIds);
-        };
-    };
-
-    (function initData ()
-    {
-        var request = indexedDB.open (dbName, dbVersion);
-
-        request.onsuccess = function (evnt)
-        {
-            var db = evnt.target.result;
-
-            sig.selected.add (function (type, isTransparent, conceptId)
+            var request = db.transaction (storeName).objectStore (storeName).get (concept.id);
+            request.onsuccess = function (evnt)
             {
-                console.log (type + '.' + conceptId);
-                if (type == 'isA')    processIsAElementFileIds    (db, isTransparent, conceptId);
-                if (type == 'partOf') processPartOfElementFileIds (db, isTransparent, conceptId);
-            });
-
-            sig.organsInitialized.add (function (solidType, solidConceptId, transType, transConceptId)
-            {
-                if (solidType == 'isA')    processIsAElementFileIds    (db, false, solidConceptId);
-                if (solidType == 'partOf') processPartOfElementFileIds (db, false, solidConceptId);
-                if (transType == 'isA')    processIsAElementFileIds    (db, true,  transConceptId);
-                if (transType == 'partOf') processPartOfElementFileIds (db, true,  transConceptId);
-            });
-        }
-
-        request.onupgradeneeded = function (evnt)
-        {
-            var db = evnt.target.result;
-            var objectStore;
-
-            ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
-            {
-                objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-                objectStore.createIndex ('representationId', 'representationId', { unique: true });
-            });
-
-            ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
-            {
-                objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
-                objectStore.createIndex ('parentId', 'parentId', { unique: false });
-                objectStore.createIndex ('childId',  'childId',  { unique: false });
-            });
-
-
-            ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
-            {
-                objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-                objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
-            });
-
-            objectStore.transaction.oncomplete = function (evnt)
-            {
-                ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
-                {
-                    loadPartsList (db, storeName);
-                });
-
-                ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
-                {
-                    loadInclusionRelationList (db, storeName);
-                });
-
-
-                ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
-                {
-                    loadElementParts (db, storeName);
-                });
-
-                localStorage.clear ();
-                loadSearchablePartsList ('isA',    'isa_parts_list_e');
-                loadSearchablePartsList ('partOf', 'partof_parts_list_e');
+                deferred.resolve ({ tree:    concept.tree,
+                                    id:      concept.id,
+                                    name:    evnt.target.result.name,
+                                    fileIds: evnt.target.result.elementFileIds });
             };
-        }
+        });
 
-        if (localStorage.length == 0)
+        return deferred.promise ();
+    }
+
+    this.parentConcepts = function (treeConceptId)
+    {
+        var vals = treeConceptId.split ('.');
+        var tree = vals[0], conceptId = vals[1];
+
+        var deferred = $.Deferred (), parents = [], storeName = tree + '_inclusion_relation_list';
+
+        dbOpened.done (function (db)
         {
-            loadSearchablePartsList ('isA',    'isa_parts_list_e');
-            loadSearchablePartsList ('partOf', 'partof_parts_list_e');
-        }
-    }) ();
+            db.transaction (storeName).objectStore (storeName)
+                .index ('childId').openCursor (IDBKeyRange.only (conceptId)).onsuccess = function (evnt)
+                {
+                    var cursor = evnt.target.result;
+                    if (cursor)
+                    {
+                        parents.push (tree + '.' + cursor.value.parentId);
+                        cursor.continue ();
+                    }
+                    else
+                    {
+                        deferred.resolve (parents);
+                    }
+                };
+            return deferred.promise ();
+        });
+        return deferred.promise ();
+    };
+
+    this.childConcepts = function (treeConceptId)
+    {
+        var vals = treeConceptId.split ('.');
+        var tree = vals[0], conceptId = vals[1];
+
+        var deferred = $.Deferred (), children = [], storeName = tree + '_inclusion_relation_list';
+
+        dbOpened.done (function (db)
+        {
+            db.transaction (storeName).objectStore (storeName)
+                .index ('parentId').openCursor (IDBKeyRange.only (conceptId)).onsuccess = function (evnt)
+                {
+                    var cursor = evnt.target.result;
+                    if (cursor)
+                    {
+                        children.push (tree + '.' + cursor.value.childId);
+                        cursor.continue ();
+                    }
+                    else
+                    {
+                        deferred.resolve (children);
+                    }
+                };
+        });
+        return deferred.promise ();
+    }
+
+    function loadSearchablePartsList (tree, fileName)
+    {
+        $.get ('data/' + fileName + '.txt', function (data)
+        {
+            var lines = data.split ('\n');
+
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length == 3)
+                    localStorage.setItem (tree + '.' + fields[0], fields[2]);
+            }
+        });
+    }
+
+    function loadPartsList (db, storeName)
+    {
+        var deferred = $.Deferred ();
+
+        $.get ('data/' + storeName + '.txt', function (data)
+        {
+            var lines = data.split ('\n');
+
+            var trx = db.transaction ([storeName], 'readwrite');
+            trx.oncomplete = function () { deferred.resolve (); };
+            var objectStore = trx.objectStore (storeName);
+
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length == 3)
+                objectStore.add ({ conceptId: fields[0], representationId: fields[1], description: fields[2] });
+            }
+        });
+
+        return deferred.promise ();
+    }
+
+    function loadInclusionRelationList (db, storeName)
+    {
+        var deferred = $.Deferred ();
+
+        $.get ('data/' + storeName + '.txt', function (data)
+        {
+            var lines = data.split ('\n');
+
+            var trx = db.transaction ([storeName], 'readwrite');
+            trx.oncomplete = function () { deferred.resolve (); };
+            var objectStore = trx.objectStore (storeName);
+
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length == 4)
+                objectStore.add ({ parentId: fields[0], childId: fields[2] });
+            }
+        });
+
+        return deferred.promise ();
+    }
+
+    function loadElementParts (db, storeName)
+    {
+        var deferred = $.Deferred ();
+
+        $.get ('data/' + storeName + '.txt', function (data)
+        {
+            var lines = data.split ('\n');
+
+            var trx = db.transaction ([storeName], 'readwrite');
+            trx.oncomplete = function () { deferred.resolve (); };
+            var objectStore = trx.objectStore (storeName);
+
+            // groupBy conceptId
+            var id, name, fileIds = [];
+            for (var i = 1; i < lines.length; i++)
+            {
+                var fields = lines[i].split ('\t');
+                if (fields.length !== 3)
+                    continue;
+
+                if (id && id !== fields[0])
+                {
+                    objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds });
+                    fileIds = [];
+                }
+
+                id = fields[0];
+                name = fields[1];
+                fileIds.push (fields[2]);
+            }
+            objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds });
+        });
+
+        return deferred.promise ();
+    }
+
+    function parseConcept (treeConceptId)
+    {
+        var vals = treeConceptId.split ('.');
+        return {tree: vals[0], id: vals[1]};
+    }
 }

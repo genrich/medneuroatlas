@@ -9,50 +9,39 @@ body
     padding:          0;
 }
 
-#help
-{
-    display:    table;
-    position:   fixed;
-    left:       0;
-    top:        0;
-    width:      100%;
-    height:     100%;
-    text-align: center;
-    z-index:    100;
-    opacity:    0.8;
-}
-
-#help div
-{
-    display:        table-cell;
-    vertical-align: middle;
-}
-
-#help div table
-{
-    text-align:    left;
-    overflow:      hidden;
-    border-radius: 10px;
-    padding:       20px;
-    margin-left:   auto;
-    margin-right:  auto;
-    color:         #FFF;
-    background:    #222;
-}
-
 #viewport
 {
     position: absolute;
     top:      0;
     left:     0;
-    right:    300px;
+    right:    0px;
     bottom:   16px;
 }
 
 #controls
 {
-    bottom:   0;
     width:    100%;
+}
+
+#pathway_play
+{
+    height: 100%;
+    width:  100%;
+}
+
+#load-type
+{
+    margin-bottom: 0.5em
+}
+
+button
+{
+    white-space: nowrap;
+}
+
+#load-type .ui-button
+{
+    width: 50%;
 }
 
 .text3d
@@ -62,7 +51,7 @@ body
     padding:       3px;
     border:        1px solid;
     border-radius: 0px 7px 7px 7px;
-    z-index:       10;
+    z-index:       1;
 }
 
 .text3dX
@@ -72,7 +61,7 @@ body
     padding:       3px;
     border:        1px solid;
     border-radius: 7px 7px 0px 7px;
-    z-index:       10;
+    z-index:       1;
 }
 
 .text3dL
@@ -82,7 +71,7 @@ body
     padding:       3px;
     border:        1px solid;
     border-radius: 7px 0px 7px 7px;
-    z-index:       10;
+    z-index:       1;
 }
 
 .text3dT
@@ -92,7 +81,7 @@ body
     padding:       3px;
     border:        1px solid;
     border-radius: 7px 7px 7px 0px;
-    z-index:       10;
+    z-index:       1;
 }
 
 .soma3d
@@ -111,48 +100,67 @@ body
     margin:   -9px -9px;
 }
 
-nav
+#search-text 
 {
-    position: absolute;
-    top:      0;
-    width:    300px;
-    right:    0;
-    bottom:   16px;
+    width:      100%;
+    font:       inherit;
+    color:      inherit;
+    text-align: inherit;
+    outline:    none;
+    cursor:     text;
 }
 
-#search-result
+#search-btn
+{
+    float: right;
+}
+
+#search-div
+{
+    overflow:      hidden;
+    padding-right: 3em;
+}
+
+ul
 {
     list-style-type: none;
-    margin:          0;
-    padding:         0;
+    margin:          0.5em 0 0 0;
+    padding-left:    1em;
 }
 
-#search-result li
+li
 {
-    margin:  2px;
-    padding: 1px;
+    margin:  2px 0 2px 0;
 }
 
-#search-result .ui-selected
+.ui-selected
 {
     background: #CCC;
 }
 
-#search-result .ui-selecting
+li.ui-selecting
 {
     background: #DDD;
 }
 
-button
+li
 {
-    width: 100%;
+    cursor: pointer;
 }
 
-#controls
+#loaded-result .root
 {
-    position: absolute;
-    bottom:   0;
-    right:    0;
+}
+
+#toolbar
+{
+    padding: 4px;
+    display: inline-block;
+}
+
+#controls .ui-button
+{
+    width: 100%;
 }
 
 footer
@@ -164,23 +172,13 @@ footer
     position:   fixed;
 }
 
-#progressbar
+.ui-tabs
 {
-    position:   absolute;
-    top:        0;
-    left:       0;
-    height:     100%;
-    width:      100%;
-    z-index:    1;
-    text-align: left;
-}
-
-.progress-label
-{
-    font-size:   14px;
-    position:    absolute;
-    left:        0px;
-    top:         0px;
+    position: absolute;
+    top:      0;
+    left:     0;
+    opacity:  0.7;
+    z-index:  3;
 }
 
 #copyright

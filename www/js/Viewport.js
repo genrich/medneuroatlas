@@ -1,40 +1,50 @@
 function Viewport (sig, container)
 {
-    var camera, scene, renderer, controls,
+    var camera, scene, renderer, controls, light,
         projector = new THREE.Projector (),
-        loader = new THREE.BinaryLoader (),
-        objects            = [],
+        binaryLoader = new THREE.BinaryLoader (true),
+        opaqueObjects = [],
         transparentObjects = [],
+        meshes = [],
         labels = [],
         pathway, spline,
         resetCamera = function () {},
         playTime, playFastFraction = 0.20, playLength = 90.0;
 
-    function onWindowResize ()
-    {
-        camera.aspect = container.width () / container.height ();
-        camera.updateProjectionMatrix ();
+    var that = this;
 
-        renderer.setSize (container.width (), container.height ());
-    }
+    scene = new THREE.Scene ();
 
-    function createMesh (geometry, materials)
-    {
-        var object = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
-        objects.push (object);
-        scene.add (object);
-    }
+    scene.add (new THREE.AmbientLight (0x404040));
 
-    function createTransparentMesh (geometry, materials)
-    {
-        var object = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777, transparent: true, opacity: 0.3 }));
-        transparentObjects.push (object);
-        scene.add (object);
-    }
+    light = new THREE.DirectionalLight (0xffffff);
+    scene.add (light);
 
-    function load (isTransparent, elementFileIds)
+    camera = new THREE.PerspectiveCamera (75, container.width () / container.height (), 1, 10000);
+    camera.position.set (0, -300, 1500);
+    camera.up.set (0, 0, 1);
+
+    controls = new THREE.TrackballControls (camera, container[0]);
+    controls.target.set (0, -100, 1500);
+    var updateLightPosition = function ()
     {
-        if (isTransparent)
+        light.position.copy (camera.position);
+        light.target.position.copy (controls.target);
+    };
+    controls.addEventListener ('change', updateLightPosition);
+    updateLightPosition ();
+
+    renderer = new THREE.WebGLRenderer ({ antialias: true });
+    renderer.setClearColor ($('body').css ('background-color'));
+    renderer.setSize (container.width (), container.height ());
+
+    container.append (renderer.domElement);
+
+    window.addEventListener ('resize', onWindowResize, false);
+
+    this.load = function (concept)
+    {
+        if (concept.transparent)
         {
             transparentObjects.forEach (function (object)
             {
@@ -46,23 +56,54 @@ function Viewport (sig, container)
         }
         else
         {
-            objects.forEach (function (object)
+            opaqueObjects.forEach (function (object)
             {
                 scene.remove (object);
                 object.geometry.dispose ();
                 object.material.dispose ();
             });
-            objects = [];
+            opaqueObjects = [];
         }
 
-
-        elementFileIds.forEach (function (elementFileId)
+        concept.fileIds.forEach (function (fileId)
         {
-            var fileUrl = 'data/bin/' + elementFileId + '.js';
-            $.ajax ({ url:     fileUrl,
-                      type:    'HEAD',
-                      success: function () { loader.load (fileUrl, isTransparent ? createTransparentMesh : createMesh); }});
+            var fileUrl = 'data/bin/' + fileId + '.js';
+            $.ajax ({ url: fileUrl, type: 'HEAD' })
+                .done (function ()
+                {
+                    binaryLoader.load (fileUrl, function (geometry, material)
+                    {
+                        var mesh;
+                        if (concept.transparent)
+                        {
+                            mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color:       0x777777,
+                                                                                              transparent: true,
+                                                                                              opacity:     0.3 }));
+                            transparentObjects.push (mesh);
+                        }
+                        else
+                        {
+                            mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
+                            opaqueObjects.push (mesh);
+                        }
+                        scene.add (mesh);
+                        // meshes[fileId] = mesh;
+                    });
+                });
         });
+    }
+
+    this.clearAll = function ()
+    {
+        console.log ('clearAll');
+    };
+
+    function onWindowResize ()
+    {
+        camera.aspect = container.width () / container.height ();
+        camera.updateProjectionMatrix ();
+
+        renderer.setSize (container.width (), container.height ());
     }
 
     function pathwayClear ()
@@ -92,38 +133,6 @@ function Viewport (sig, container)
 
     if (! Detector.webgl) return Detector.addGetWebGLMessage ({ parent: container[0] });
 
-    (function initThreeJs ()
-    {
-        camera = new THREE.PerspectiveCamera (75, container.width () / container.height (), 1, 10000);
-        camera.position.set (0, -300, 1500);
-        camera.up.set (0, 0, 1);
-
-        controls = new THREE.TrackballControls (camera, container[0]);
-        controls.target.set (0, -100, 1500);
-
-        scene = new THREE.Scene ();
-
-        scene.add (new THREE.AmbientLight (0x404040));
-
-        var light = new THREE.DirectionalLight (0xffffff);
-        light.position = camera.position;
-        light.target.position = controls.target;
-        scene.add (light);
-
-        renderer = new THREE.WebGLRenderer ({ antialias: true });
-        renderer.setClearColor ($('body').css ('background-color'));
-        renderer.setSize (container.width (), container.height ());
-
-        container.append (renderer.domElement);
-
-        window.addEventListener ('resize', onWindowResize, false);
-    } ());
-
-    sig.dataRetrieved.add (function (isTransparent, elementFileIds)
-    {
-        load (isTransparent, elementFileIds);
-    });
-
     function addLabels ()
     {
         labels.forEach (function (label)
@@ -145,7 +154,7 @@ function Viewport (sig, container)
         };
         resetCamera ();
 
-        loader.load ('data/bin/lightTouchPathway.js', function (geom, mat)
+        binaryLoader.load ('data/bin/lightTouchPathway.js', function (geom, mat)
         {
             pathwayClear ();
             pathway = new THREE.Line (geom, new THREE.LineBasicMaterial ({ color: 0xff0000 }));
@@ -192,8 +201,10 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
-        load (false, []);
-        load (true, ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176', 'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782']);
+        control.clearAll ();
+        that.load ({ transparent: false, fileIds: [] });
+        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
+                                                  'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
     sig.painAndTemperaturePathwayShow.add (function ()
@@ -206,7 +217,7 @@ function Viewport (sig, container)
         };
         resetCamera ();
 
-        loader.load ('data/bin/painAndTemperaturePathway.js', function (geom, mat)
+        binaryLoader.load ('data/bin/painAndTemperaturePathway.js', function (geom, mat)
         {
             pathwayClear ();
             pathway = new THREE.Line (geom, new THREE.LineBasicMaterial ({ color: 0xff0000 }));
@@ -253,8 +264,9 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
-        load (false, []);
-        load (true, ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176', 'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782']);
+        that.load ({ transparent: false, fileIds: [] });
+        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
+                                                  'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
     sig.faceLightTouchPathwayShow.add (function ()
@@ -267,7 +279,7 @@ function Viewport (sig, container)
         };
         resetCamera ();
 
-        loader.load ('data/bin/faceLightTouchPathway.js', function (geom, mat)
+        binaryLoader.load ('data/bin/faceLightTouchPathway.js', function (geom, mat)
         {
             pathwayClear ();
             pathway = new THREE.Line (geom, new THREE.LineBasicMaterial ({ color: 0xff0000 }));
@@ -312,11 +324,11 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (-62.3792, -77.2263, 1575.3464) });
         addLabels ();
 
-        load (false, []);
-        load (true, ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
-                'FJ1312', 'FJ1315', 'FJ1318', 'FJ1325', 'FJ1326', 'FJ1333', 'FJ1341', 'FJ1347', 'FJ1351', 'FJ1361', 'FJ1362',
-                'FJ1363', 'FJ1366', 'FJ1369', 'FJ1376', 'FJ1377',
-                'FJ1775', 'FJ1822', 'FJ1827', 'FJ1798']);
+        that.load ({ transparent: false, fileIds: [] });
+        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
+                                                  'FJ1312', 'FJ1315', 'FJ1318', 'FJ1325', 'FJ1326', 'FJ1333', 'FJ1341',
+                                                  'FJ1347', 'FJ1351', 'FJ1361', 'FJ1362', 'FJ1363', 'FJ1366', 'FJ1369',
+                                                  'FJ1376', 'FJ1377', 'FJ1775', 'FJ1822', 'FJ1827', 'FJ1798'] });
     });
 
     function enableButtons ()
@@ -408,6 +420,9 @@ function Viewport (sig, container)
                     camera.position.set (pos.x, pos.y, pos.z);
                     camera.lookAt (pos.add (dir));
                     controls.target.set (pos.x, pos.y, pos.z);
+
+                    light.position.copy (camera.position);
+                    light.target.position.copy (controls.target);
                 }
             }
             else
