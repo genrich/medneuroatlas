@@ -9,7 +9,7 @@ function TabsControl (sig, ontology, viewport)
         {
             $.extend (concept, { loaded: true, transparent: isTransparent });
             viewport.load (concept);
-            loadedResult.append (createLi (concept));
+            loadedResult.append (createLi (concept, 'loaded'));
         });
     };
 
@@ -183,8 +183,8 @@ function TabsControl (sig, ontology, viewport)
     }
     else
     {
-        that.loadConcept ('partof.FMA50801', false);
-        that.loadConcept ('partof.FMA53672', true);
+        this.loadConcept ('partof.FMA50801', false);
+        this.loadConcept ('partof.FMA53672', true);
     }
 
     function clearAllTransparent ()
@@ -219,14 +219,17 @@ function TabsControl (sig, ontology, viewport)
 
     function refresh ()
     {
-        throw 'Not implmented yet';
+        loadedResult.children ('li').not ('.loaded').remove ();
+        loadedResult.children ('li.loaded').children ('ul').remove ();
+        loadedResult.children ('li.loaded').children ('button').children ('span')
+                    .removeClass ('ui-icon-minus').addClass ('ui-icon-plus');
     }
 
     function help ()
     {
         $('#toolbar button').each (function (i, el)
         {
-            var start = i * 3000, stop = start + 4000;
+            var start = i * 2000, stop = start + 3000;
             setTimeout (function () { $(el).tooltip ('open'); }, start);
             setTimeout (function () { $(el).tooltip ('close'); }, stop);
         });
@@ -290,13 +293,13 @@ function TabsControl (sig, ontology, viewport)
         }
     }
 
-    function createLi (concept)
+    function createLi (concept, classes)
     {
         return $('<li/>')
             .attr ('data-concept', concept.tree + '.' + concept.id)
             .data ('transparent', concept.transparent)
             .data ('loaded', concept.loaded)
-            .addClass ('loaded root')
+            .addClass (classes)
             .click (function (evnt)
             {
                 $('li > span.ui-selected', loadedResult).removeClass ('ui-selected');

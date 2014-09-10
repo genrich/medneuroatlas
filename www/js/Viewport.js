@@ -5,7 +5,6 @@ function Viewport (sig, container)
         binaryLoader = new THREE.BinaryLoader (true),
         opaqueObjects = [],
         transparentObjects = [],
-        meshes = [],
         labels = [],
         pathway, spline,
         resetCamera = function () {},
@@ -42,6 +41,74 @@ function Viewport (sig, container)
 
     window.addEventListener ('resize', onWindowResize, false);
 
+    var prevTimestamp = 0;
+
+    (function animate (timestamp)
+    {
+        if (timestamp)
+        {
+            var delta = (timestamp - prevTimestamp) / 1000;
+            prevTimestamp = timestamp;
+
+            if (playTime !== undefined)
+            {
+                playTime += delta;
+
+                if (playTime >= playLength)
+                {
+                    endAnimation ();
+                }
+                else
+                {
+                    var t;
+                    if (playTime < (playFastFraction * playLength))
+                    {
+                        t =  playTime / (playFastFraction * playLength) * (1 - playFastFraction);
+                    }
+                    else
+                    {
+                        t = (playTime - (playFastFraction * playLength)) / ((1 - playFastFraction) * playLength)
+                            * playFastFraction + (1 - playFastFraction);
+                    }
+                    var pos = spline.getPointAt (t);
+                    var dir = spline.getTangentAt (t);
+                    camera.position.set (pos.x, pos.y, pos.z);
+                    camera.lookAt (pos.add (dir));
+                    controls.target.set (pos.x, pos.y, pos.z);
+
+                    light.position.copy (camera.position);
+                    light.target.position.copy (controls.target);
+                }
+            }
+            else
+            {
+                controls.update ();
+            }
+        }
+
+        renderer.render (scene, camera);
+
+        var frustum = new THREE.Frustum ();
+        frustum.setFromMatrix (new THREE.Matrix4 ().multiplyMatrices (camera.projectionMatrix, camera.matrixWorldInverse));
+
+        labels.forEach (function (label)
+        {
+            if (frustum.containsPoint (label.pos))
+            {
+                label.obj.show ();
+                var v2 = to2d (label.pos);
+                label.obj.css ('left', v2.x + 'px');
+                label.obj.css ('top',  v2.y + 'px');
+            }
+            else
+            {
+                label.obj.hide ();
+            }
+        });
+
+        requestAnimationFrame (animate);
+    }) ();
+
     this.load = function (concept)
     {
         if (concept.transparent)
@@ -68,28 +135,26 @@ function Viewport (sig, container)
         concept.fileIds.forEach (function (fileId)
         {
             var fileUrl = 'data/bin/' + fileId + '.js';
-            $.ajax ({ url: fileUrl, type: 'HEAD' })
-                .done (function ()
+            $.ajax ({ url: fileUrl, type: 'HEAD' }).done (function ()
+            {
+                binaryLoader.load (fileUrl, function (geometry, material)
                 {
-                    binaryLoader.load (fileUrl, function (geometry, material)
+                    var mesh;
+                    if (concept.transparent)
                     {
-                        var mesh;
-                        if (concept.transparent)
-                        {
-                            mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color:       0x777777,
-                                                                                              transparent: true,
-                                                                                              opacity:     0.3 }));
-                            transparentObjects.push (mesh);
-                        }
-                        else
-                        {
-                            mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
-                            opaqueObjects.push (mesh);
-                        }
-                        scene.add (mesh);
-                        // meshes[fileId] = mesh;
-                    });
+                        mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color:       0x777777,
+                                                                                          transparent: true,
+                                                                                          opacity:     0.3 }));
+                        transparentObjects.push (mesh);
+                    }
+                    else
+                    {
+                        mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
+                        opaqueObjects.push (mesh);
+                    }
+                    scene.add (mesh);
                 });
+            });
         });
     }
 
@@ -125,8 +190,6 @@ function Viewport (sig, container)
         vector.y = -(vector.y - 1) / 2 * container.height ();
         return vector;
     }
-
-    if (! Detector.webgl) return Detector.addGetWebGLMessage ({ parent: container[0] });
 
     function addLabels ()
     {
@@ -379,72 +442,4 @@ function Viewport (sig, container)
         enableButtons ();
         controls.enabled = true;
     }
-
-    var prevTimestamp = 0;
-
-    (function animate (timestamp)
-    {
-        if (timestamp)
-        {
-            var delta = (timestamp - prevTimestamp) / 1000;
-            prevTimestamp = timestamp;
-
-            if (playTime !== undefined)
-            {
-                playTime += delta;
-
-                if (playTime >= playLength)
-                {
-                    endAnimation ();
-                }
-                else
-                {
-                    var t;
-                    if (playTime < (playFastFraction * playLength))
-                    {
-                        t =  playTime / (playFastFraction * playLength) * (1 - playFastFraction);
-                    }
-                    else
-                    {
-                        t = (playTime - (playFastFraction * playLength)) / ((1 - playFastFraction) * playLength)
-                            * playFastFraction + (1 - playFastFraction);
-                    }
-                    var pos = spline.getPointAt (t);
-                    var dir = spline.getTangentAt (t);
-                    camera.position.set (pos.x, pos.y, pos.z);
-                    camera.lookAt (pos.add (dir));
-                    controls.target.set (pos.x, pos.y, pos.z);
-
-                    light.position.copy (camera.position);
-                    light.target.position.copy (controls.target);
-                }
-            }
-            else
-            {
-                controls.update ();
-            }
-        }
-
-        renderer.render (scene, camera);
-
-        var frustum = new THREE.Frustum ();
-        frustum.setFromMatrix (new THREE.Matrix4 ().multiplyMatrices (camera.projectionMatrix, camera.matrixWorldInverse));
-
-        labels.forEach (function (label)
-        {
-            if (frustum.containsPoint (label.pos))
-            {
-                label.obj.show ();
-                var v2 = to2d (label.pos);
-                label.obj.css ('left', v2.x + 'px');
-                label.obj.css ('top',  v2.y + 'px');
-            }
-            else
-            {
-                label.obj.hide ();
-            }
-        });
-
-        requestAnimationFrame (animate);
-    }) ();
-};
+}
