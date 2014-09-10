@@ -1,9 +1,8 @@
 function Ontology ()
 {
-    const dbName = 'medneuroatlas', dbVersion = 1; // TODO version upgrade
+    const dbName = 'medneuroatlas', dbVersion = 2;
 
-    var dbOpened = $.Deferred (),
-        dbUpgraded, dbDataLoaded = [];
+    var dbOpened = $.Deferred (), dbUpgraded, dbDataLoaded = [];
 
     var request = indexedDB.open (dbName, dbVersion);
     request.onsuccess = function (evnt)
@@ -22,12 +21,16 @@ function Ontology ()
 
         ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
         {
+            if (db.objectStoreNames.contains (storeName))
+                db.deleteObjectStore (storeName);
             objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
             objectStore.createIndex ('representationId', 'representationId', { unique: true });
         });
 
         ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
         {
+            if (db.objectStoreNames.contains (storeName))
+                db.deleteObjectStore (storeName);
             objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
             objectStore.createIndex ('parentId', 'parentId', { unique: false });
             objectStore.createIndex ('childId',  'childId',  { unique: false });
@@ -35,6 +38,8 @@ function Ontology ()
 
         ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
         {
+            if (db.objectStoreNames.contains (storeName))
+                db.deleteObjectStore (storeName);
             objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
             objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
         });
@@ -71,29 +76,24 @@ function Ontology ()
 
     this.search = function (str)
     {
-        var li = [], foundCount = 0;
+        var results = [], foundCount = 0;
         const limit = 30;
-
-        $('#search').prop ('disabled', true);
 
         for (var i = 0; i < localStorage.length; i++)
         {
             var key = localStorage.key (i); // key = '(isa|partof).FMA123'
-            var description = localStorage.getItem (key);
-            if (description.indexOf (str) !== -1)
+            var name = localStorage.getItem (key);
+            if (name.indexOf (str) !== -1)
             {
                 ++foundCount;
-                li.push ('<li data-concept="' + key + '" class="ui-selectee">' + description + '</li>');
+                results.push ({ key: key, name: name });
             }
 
             if (foundCount >= limit)
                 break;
         }
 
-        $('#search-result').html (li.join (''));
-        $('#search-result li:first-child').addClass ('ui-selected');
-
-        $('#search').prop ('disabled', false);
+        return results;
     };
 
     this.conceptRetrieved = function (treeConceptId)
@@ -204,7 +204,7 @@ function Ontology ()
             {
                 var fields = lines[i].split ('\t');
                 if (fields.length == 3)
-                objectStore.add ({ conceptId: fields[0], representationId: fields[1], description: fields[2] });
+                objectStore.add ({ conceptId: fields[0], representationId: fields[1], name: fields[2] });
             }
         });
 

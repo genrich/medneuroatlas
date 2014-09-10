@@ -18,38 +18,50 @@
 	<body onload="main()">
         <div id="tabs">
             <ul>
-                <li><a href="#loaded-tab">Loaded</a></li>
-                <li><a href="#search-tab">Search</a></li>
-                <li><a href="#pathways-tab">Pathways</a></li>
-                <li><a href="#help-tab">Help</a></li>
+                <li><a href="#loaded_tab">Loaded</a></li>
+                <li><a href="#search_tab">Search</a></li>
+                <li><a href="#pathways_tab">Pathways</a></li>
+                <li><a href="#help_tab">Help</a></li>
             </ul>
-            <div id="loaded-tab">
+            <div id="loaded_tab">
                 <div id="toolbar" class="ui-widget-header ui-corner-all">
-                    <span id="toolbar-transparent">
-                        <button id="clear-all-transparent">clear all transparent</button>
-                        <button id="load-transparent">load transparent</button>
-                        <button id="clear-transparent">clear transparent</button>
+                    <span id="toolbar_transparent">
+                        <button id="clear_all_transparent">clear all transparent</button>
+                        <button id="load_transparent">load transparent</button>
+                        <button id="clear_transparent">clear transparent</button>
                     </span>
-                    <span id="toolbar-opaque">
-                        <button id="load-opaque">load opaque</button>
-                        <button id="clear-opaque">clear opaque</button>
-                        <button id="clear-all-opaque">clear all opaque</button>
+                    <span id="toolbar_opaque">
+                        <button id="load_opaque">load opaque</button>
+                        <button id="clear_opaque">clear opaque</button>
+                        <button id="clear_all_opaque">clear all opaque</button>
+                    </span>
+                    <span id="toolbar_other">
+                        <button id="refresh">leave only loaded concepts</button>
+                        <button id="help">help</button>
                     </span>
                 </div>
-                <ul id="loaded-result"></ul>
-            </div>
-            <div id="search-tab">
-                <div id="load-type">
-                    <input type="radio" id="radio-transparent" name="radio" checked="checked"><label for="radio-transparent">Transparent</label>
-                    <input type="radio" id="radio-opaque" name="radio"><label for="radio-opaque">Opaque</label>
+                <div id="loaded_tab_load_type" class="load-type">
+                    <input type="radio" id="loaded_tab_radio_transparent" name="loaded_load_type" checked="checked">
+                    <label for="loaded_tab_radio_transparent">Transparent</label>
+                    <input type="radio" id="loaded_tab_radio_opaque" name="loaded_load_type">
+                    <label for="loaded_tab_radio_opaque">Opaque</label>
                 </div>
-                <button id="search-btn" tabindex="2">Search</button>
-                <div id="search-div">
-                    <input id="search-text" type="text" tabindex="1" autocomplete="off">
-                </div>
-                <ul id="search-result"></ul>
+                <ul id="loaded_result"></ul>
             </div>
-            <div id="pathways-tab">
+            <div id="search_tab">
+                <div id="search_tab_load_type" class="load-type">
+                    <input type="radio" id="search_tab_radio_transparent" name="search_load_type" checked="checked">
+                    <label for="search_tab_radio_transparent">Transparent</label>
+                    <input type="radio" id="search_tab_radio_opaque" name="search_load_type">
+                    <label for="search_tab_radio_opaque">Opaque</label>
+                </div>
+                <button id="search_btn" tabindex="2">Search</button>
+                <div id="search_div">
+                    <input id="search_text" class="ui-button ui-corner-all" type="text" tabindex="1" autocomplete="off">
+                </div>
+                <ul id="search_result"></ul>
+            </div>
+            <div id="pathways_tab">
                 <table id="controls">
                     <tr><td colspan="2"><button id="light_touch_pathway_show">Light touch pathway</button></td></tr>
                     <tr><td colspan="2"><button id="pain_and_temperature_pathway_show">Pain and temperature pathway</button></td></tr>
@@ -57,7 +69,7 @@
                     <tr><td><button id="pathway_play"></button></td><td><button id="pathway_clear">Clear</button></td></tr>
                 </table>
             </div>
-            <div id="help-tab">
+            <div id="help_tab">
                 <table>
                     <tr><td>#</td><td> - </td><td>jump to loaded tab</td></tr>
                     <tr><td>/</td><td> - </td><td>jump to search tab</td></tr>
@@ -73,7 +85,6 @@
         </div>
         <div id="viewport"></div>
         <footer>
-            <div id="progressbar"><div class="progress-label"></div></div>
             <div id="copyright">
                 <a href="https://github.com/genrich/medneuroatlas">Medneuroatlas</a> is based on data from: "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution-Share Alike 2.1 Japan"
             </div>

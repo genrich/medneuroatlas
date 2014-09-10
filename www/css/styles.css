@@ -29,9 +29,10 @@ body
     width:  100%;
 }
 
-#load-type
+div.load-type
 {
-    margin-bottom: 0.5em
+    margin-top:    0.5em;
+    margin-bottom: 0.5em;
 }
 
 button
@@ -39,7 +40,7 @@ button
     white-space: nowrap;
 }
 
-#load-type .ui-button
+div.load-type .ui-button
 {
     width: 50%;
 }
@@ -100,7 +101,7 @@ button
     margin:   -9px -9px;
 }
 
-#search-text 
+#search_text 
 {
     width:      100%;
     font:       inherit;
@@ -110,12 +111,12 @@ button
     cursor:     text;
 }
 
-#search-btn
+#search_btn
 {
     float: right;
 }
 
-#search-div
+#search_div
 {
     overflow:      hidden;
     padding-right: 3em;
@@ -148,13 +149,9 @@ li
     cursor: pointer;
 }
 
-#loaded-result .root
-{
-}
-
 #toolbar
 {
-    padding: 4px;
+    padding: 4px 0.5em 4px 0.5em;
     display: inline-block;
 }
 

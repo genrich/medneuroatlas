@@ -9,7 +9,7 @@ function TabsControl (sig, ontology, viewport)
         {
             $.extend (concept, { loaded: true, transparent: isTransparent });
             viewport.load (concept);
-            appendLi (concept, loadedResult);
+            loadedResult.append (createLi (concept));
         });
     };
 
@@ -18,43 +18,71 @@ function TabsControl (sig, ontology, viewport)
         activate: function (evnt, ui)
         {
             if (ui.newTab.text () == 'Search')
-                $('#search-text').focus ();
+                searchText.focus ();
         },
         collapsible: true,
         hide: { effect: "blind", duration: 200 },
         show: { effect: "blind", duration: 200 },
     });
 
-    // loaded tab
+    // loaded tab ----------------------------------------------------------------------------------
     $('#toolbar').buttonset ();
-    $("#toolbar-transparent").buttonset();
-    $("#toolbar-opaque").buttonset();
-    $("#clear-all-transparent").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+    $("#toolbar_transparent").buttonset();
+    $("#toolbar_opaque").buttonset();
+    $("#clear_all_transparent").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+                               .tooltip ()
                                .click (function () { clearAllTransparent (); });
-    $("#load-transparent").button ({ text: false, icons: { primary: "ui-icon-circle-plus" }})
+    $("#load_transparent").button ({ text: false, icons: { primary: "ui-icon-circle-plus" }})
+                          .tooltip ({ show: { delay: 1000 }})
                           .click (function () { loadTransparent (); });
-    $("#clear-transparent").button ({ text: false, icons: { primary: "ui-icon-circle-minus" }})
+    $("#clear_transparent").button ({ text: false, icons: { primary: "ui-icon-circle-minus" }})
+                           .tooltip ({ show: { delay: 1000 }})
                            .click (function () { clearTransparent (); });
-    $("#load-opaque").button ({ text: false, icons: { primary: "ui-icon-plus" }})
+    $("#load_opaque").button ({ text: false, icons: { primary: "ui-icon-plus" }})
+                     .tooltip ({ show: { delay: 1000 }})
                      .click (function () { loadOpaque (); });
-    $("#clear-opaque").button ({ text: false, icons: { primary: "ui-icon-minus" }})
+    $("#clear_opaque").button ({ text: false, icons: { primary: "ui-icon-minus" }})
+                      .tooltip ({ show: { delay: 1000 }})
                       .click (function () { clearOpaque (); });
-    $("#clear-all-opaque").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+    $("#clear_all_opaque").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+                          .tooltip ({ show: { delay: 1000 }})
                           .click (function () { clearAllOpaque (); });
+    $("#refresh").button ({ text: false, icons: { primary: "ui-icon-refresh" }})
+                 .tooltip ({ show: { delay: 1000 }})
+                 .click (function () { refresh (); });
+    $("#help").button ({ text: false, icons: { primary: "ui-icon-help" }})
+              .tooltip ({ show: { delay: 1000 }})
+              .click (function () { help (); });
 
-    var loadedResult = $('#loaded-result');
+    $("#loaded_tab_load_type").buttonset ();
 
-    // search tab
-    var searchText = $('#search-text'), searchResult = $('#search-result');
-    $("#load-type").buttonset ();
-    $('#search-btn').button ().click (function (evnt) { ontology.search (searchText.val ()); });
-    $('#search-text').addClass ('ui-button ui-corner-all');
+    var loadedResult = $('#loaded_result');
+
+    // search tab ----------------------------------------------------------------------------------
+    var searchText = $('#search_text'), searchResult = $('#search_result');
+    $("#search_tab_load_type").buttonset ();
+
+    $('#search_btn').button ().click (function (evnt)
+    {
+        searchText.prop ('disabled', true);
+
+        var li = [];
+        ontology.search (searchText.val ()).forEach (function (el)
+        {
+            li.push ('<li data-concept="' + el.key + '" class="ui-selectee">' + el.name + '</li>');
+        });
+
+        $('#search_result').html (li.join (''));
+        $('#search_result li:first-child').addClass ('ui-selected');
+
+        searchText.prop ('disabled', false);
+    });
 
     searchResult.selectable (
     {
         selected: function (evnt, ui)
         {
-            that.loadConcept ($(ui.selected).data ('concept'), $('#radio-transparent').is (':checked'));
+            that.loadConcept ($(ui.selected).data ('concept'), $('#search_tab_radio_transparent').is (':checked'));
         }
     });
 
@@ -83,7 +111,7 @@ function TabsControl (sig, ontology, viewport)
                 }
                 else
                 {
-                    $('#search-btn').click ();
+                    $('#search_btn').click ();
                 }
                 break;
             case 38: // up
@@ -115,7 +143,7 @@ function TabsControl (sig, ontology, viewport)
         }
     });
 
-    // pathways tab
+    // pathways tab --------------------------------------------------------------------------------
     $('#light_touch_pathway_show')         .button ().click (function (evnt) { sig.lightTouchPathwayShow        .dispatch (); });
     $('#pain_and_temperature_pathway_show').button ().click (function (evnt) { sig.painAndTemperaturePathwayShow.dispatch (); });
     $('#face_light_touch_pathway_show')    .button ().click (function (evnt) { sig.faceLightTouchPathwayShow    .dispatch (); });
@@ -161,56 +189,77 @@ function TabsControl (sig, ontology, viewport)
 
     function clearAllTransparent ()
     {
-        console.log ('clearAllTransparent');
+        throw 'Not implmented yet';
     }
 
     function loadTransparent ()
     {
-        console.log ('loadTransparent');
+        throw 'Not implmented yet';
     }
 
     function clearTransparent ()
     {
-        console.log ('clearTransparent');
+        throw 'Not implmented yet';
     }
 
     function loadOpaque ()
     {
-        console.log ('loadOpaque');
+        throw 'Not implmented yet';
     }
 
     function clearOpaque ()
     {
-        console.log ('clearOpaque');
+        throw 'Not implmented yet';
     }
 
     function clearAllOpaque ()
     {
-        console.log ('clearAllOpaque');
+        throw 'Not implmented yet';
     }
 
-    function childrenToggle (btn)
+    function refresh ()
     {
-        console.log ('childrenToggle');
-        console.log (btn);
+        throw 'Not implmented yet';
+    }
+
+    function help ()
+    {
+        $('#toolbar button').each (function (i, el)
+        {
+            var start = i * 3000, stop = start + 4000;
+            setTimeout (function () { $(el).tooltip ('open'); }, start);
+            setTimeout (function () { $(el).tooltip ('close'); }, stop);
+        });
     }
 
     function parentsToggle (button)
     {
         var btn = $(button), span = btn.children ('span.ui-icon');
+        var concept = btn.parent ().data ('concept');
         if (span.hasClass ('ui-icon-plus'))
         {
-            span.removeClass ('ui-icon-plus').addClass ('ui-icon-minus');
-            ontology.parentConcepts (btn.parent ().data ('concept')).done (function (concepts)
+            ontology.parentConcepts (concept).done (function (parentConcepts)
             {
-                concepts.forEach (function (concept)
+                parentConcepts.forEach (function (parentConcept)
                 {
-                    console.log (concept);
+                    ontology.conceptRetrieved (parentConcept).done (function (parentConceptObj)
+                    {
+                        $.extend (parentConceptObj, { loaded: false, transparent: false });
+                        btn.parent ().before (createLi (parentConceptObj));
+                    });
                 });
             });
+            span.removeClass ('ui-icon-plus').addClass ('ui-icon-minus');
         }
         else
         {
+            ontology.parentConcepts (concept).done (function (parentConcepts)
+            {
+                parentConcepts.forEach (function (parentConcept)
+                {
+                    btn.parent ().siblings ('[data-concept="' + parentConcept + '"]').remove ();
+                });
+            });
             span.removeClass ('ui-icon-minus').addClass ('ui-icon-plus');
         }
     }
@@ -229,7 +278,7 @@ function TabsControl (sig, ontology, viewport)
                     ontology.conceptRetrieved (treeConceptId).done (function (concept)
                     {
                         $.extend (concept, { loaded: false, transparent: false });
-                        appendLi (concept, ul);
+                        ul.append (createLi (concept));
                     });
                 });
             });
@@ -241,16 +290,15 @@ function TabsControl (sig, ontology, viewport)
         }
     }
 
-    function appendLi (concept, parnt)
+    function createLi (concept)
     {
-        $('<li/>')
-            .data ('concept', concept.tree + '.' + concept.id)
+        return $('<li/>')
+            .attr ('data-concept', concept.tree + '.' + concept.id)
             .data ('transparent', concept.transparent)
             .data ('loaded', concept.loaded)
             .addClass ('loaded root')
             .click (function (evnt)
             {
-                console.log (this);
                 $('li > span.ui-selected', loadedResult).removeClass ('ui-selected');
                 $('> span', $(this)).addClass ('ui-selected');
                 evnt.stopPropagation ();
@@ -263,7 +311,6 @@ function TabsControl (sig, ontology, viewport)
             .append ($('<button/>').button ({ text: false, icons: { primary: 'ui-icon-plus'}})
                                     .removeClass ('ui-button-icon-only')
                                     .click (function () { childrenToggle (this); })
-                                    .focus (function () { this.blur (); }))
-            .appendTo (parnt);
+                                    .focus (function () { this.blur (); }));
     }
 }

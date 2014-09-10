@@ -93,11 +93,6 @@ function Viewport (sig, container)
         });
     }
 
-    this.clearAll = function ()
-    {
-        console.log ('clearAll');
-    };
-
     function onWindowResize ()
     {
         camera.aspect = container.width () / container.height ();
@@ -201,7 +196,6 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
-        control.clearAll ();
         that.load ({ transparent: false, fileIds: [] });
         that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
                                                   'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
