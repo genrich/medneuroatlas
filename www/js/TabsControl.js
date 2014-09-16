@@ -1,18 +1,8 @@
 function TabsControl (sig, ontology, viewport)
 {
-    var concepts = [];
     var that = this;
 
-    this.loadConcept = function (treeConceptId, isTransparent)
-    {
-        ontology.conceptRetrieved (treeConceptId).done (function (concept)
-        {
-            $.extend (concept, { loaded: true, transparent: isTransparent });
-            viewport.load (concept);
-            loadedResult.append (createLi (concept, 'loaded'));
-        });
-    };
-
+    // tabs ----------------------------------------------------------------------------------------
     $('#tabs').tabs (
     {
         activate: function (evnt, ui)
@@ -26,45 +16,54 @@ function TabsControl (sig, ontology, viewport)
     });
 
     // loaded tab ----------------------------------------------------------------------------------
-    $('#toolbar').buttonset ();
+    $('#loaded_toolbar').buttonset ();
     $("#toolbar_transparent").buttonset();
     $("#toolbar_opaque").buttonset();
-    $("#clear_all_transparent").button ({ text: false, icons: { primary: "ui-icon-trash" }})
-                               .tooltip ()
-                               .click (function () { clearAllTransparent (); });
-    $("#load_transparent").button ({ text: false, icons: { primary: "ui-icon-circle-plus" }})
-                          .tooltip ({ show: { delay: 1000 }})
-                          .click (function () { loadTransparent (); });
-    $("#clear_transparent").button ({ text: false, icons: { primary: "ui-icon-circle-minus" }})
-                           .tooltip ({ show: { delay: 1000 }})
-                           .click (function () { clearTransparent (); });
-    $("#load_opaque").button ({ text: false, icons: { primary: "ui-icon-plus" }})
+    $("#loaded_btn_pin_transparent").button ({ text: false, icons: { primary: "ui-icon-radio-off" }})
+                                    .tooltip ({ show: { delay: 1000 }})
+                                    .click (function () { pinTransparent (true); });
+    $("#btn_unpin_all_transparent").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+                                   .tooltip ({ show: { delay: 1000 }})
+                                   .click (function () { unpinAllTransparent (); });
+    $("#loaded_btn_pin_opaque").button ({ text: false, icons: { primary: "ui-icon-bullet" }})
+                               .tooltip ({ show: { delay: 1000 }})
+                               .click (function () { pinOpaque (true); });
+    $("#btn_unpin_all_opaque").button ({ text: false, icons: { primary: "ui-icon-trash" }})
+                              .tooltip ({ show: { delay: 1000 }})
+                              .click (function () { unpinAllOpaque (); });
+    $("#btn_unpin").button ({ text: false, icons: { primary: "ui-icon-extlink" }})
+                   .tooltip ({ show: { delay: 1000 }})
+                   .click (function () { unpinSelected (); });
+    $("#btn_refresh").button ({ text: false, icons: { primary: "ui-icon-refresh" }})
                      .tooltip ({ show: { delay: 1000 }})
-                     .click (function () { loadOpaque (); });
-    $("#clear_opaque").button ({ text: false, icons: { primary: "ui-icon-minus" }})
-                      .tooltip ({ show: { delay: 1000 }})
-                      .click (function () { clearOpaque (); });
-    $("#clear_all_opaque").button ({ text: false, icons: { primary: "ui-icon-trash" }})
-                          .tooltip ({ show: { delay: 1000 }})
-                          .click (function () { clearAllOpaque (); });
-    $("#refresh").button ({ text: false, icons: { primary: "ui-icon-refresh" }})
-                 .tooltip ({ show: { delay: 1000 }})
-                 .click (function () { refresh (); });
-    $("#help").button ({ text: false, icons: { primary: "ui-icon-help" }})
-              .tooltip ({ show: { delay: 1000 }})
-              .click (function () { help (); });
-
-    $("#loaded_tab_load_type").buttonset ();
+                     .click (function () { refresh (); });
+    $("#btn_help").button ({ text: false, icons: { primary: "ui-icon-help" }})
+                  .tooltip ({ show: { delay: 1000 }})
+                  .click (function () { help (); });
 
     var loadedResult = $('#loaded_result');
 
     // search tab ----------------------------------------------------------------------------------
     var searchText = $('#search_text'), searchResult = $('#search_result');
-    $("#search_tab_load_type").buttonset ();
+    $("#search_btn_pin_transparent").button ({ text: false, icons: { primary: "ui-icon-radio-off" }})
+                                    .tooltip ({ show: { delay: 1000 }})
+                                    .click (function () { pinTransparent (false); });
+    $("#search_btn_pin_opaque").button ({ text: false, icons: { primary: "ui-icon-bullet" }})
+                               .tooltip ({ show: { delay: 1000 }})
+                               .click (function () { pinOpaque (false); });
 
     $('#search_btn').button ().click (function (evnt)
     {
         searchText.prop ('disabled', true);
+
+        var selectedSearchResult = $('li.ui-selected', searchResult);
+        if (selectedSearchResult.length != 0)
+        {
+            ontology.conceptRetrieved (selectedSearchResult.data ('concept')).done (function (concept)
+            {
+                viewport.deselect (concept);
+            });
+        }
 
         var li = [];
         ontology.search (searchText.val ()).forEach (function (el)
@@ -72,8 +71,7 @@ function TabsControl (sig, ontology, viewport)
             li.push ('<li data-concept="' + el.key + '" class="ui-selectee">' + el.name + '</li>');
         });
 
-        $('#search_result').html (li.join (''));
-        $('#search_result li:first-child').addClass ('ui-selected');
+        searchResult.html (li.join (''));
 
         searchText.prop ('disabled', false);
     });
@@ -82,7 +80,19 @@ function TabsControl (sig, ontology, viewport)
     {
         selected: function (evnt, ui)
         {
-            that.loadConcept ($(ui.selected).data ('concept'), $('#search_tab_radio_transparent').is (':checked'));
+            var key = $(ui.selected).data ('concept');
+            ontology.conceptRetrieved (key).done (function (concept)
+            {
+                viewport.select (concept);
+            });
+        },
+        unselected: function (evnt, ui)
+        {
+            var key = $(ui.unselected).data ('concept');
+            ontology.conceptRetrieved (key).done (function (concept)
+            {
+                viewport.deselect (concept);
+            });
         }
     });
 
@@ -101,13 +111,13 @@ function TabsControl (sig, ontology, viewport)
                 {
                     var selected = $('.ui-selected', searchResult);
                     if (selected.length)
-                        that.loadConcept (selected.data ('concept'), false);
+                        showConcept (selected.data ('concept'), false);
                 }
                 else if (evnt.shiftKey)
                 {
                     var selected = $('.ui-selected', searchResult);
                     if (selected.length)
-                        that.loadConcept (selected.data ('concept'), true);
+                        showConcept (selected.data ('concept'), true);
                 }
                 else
                 {
@@ -178,43 +188,78 @@ function TabsControl (sig, ontology, viewport)
         var opaqueOrgan      = strs[0];
         var transparentOrgan = strs[1];
 
-        this.loadConcept (opaqueOrgan, false);
-        this.loadConcept (transparentOrgan, true);
+        showConcept (opaqueOrgan, false);
+        showConcept (transparentOrgan, true);
     }
     else
     {
-        this.loadConcept ('partof.FMA50801', false);
-        this.loadConcept ('partof.FMA53672', true);
+        showConcept ('partof.FMA50801', false);
+        showConcept ('partof.FMA53672', true);
     }
 
-    function clearAllTransparent ()
+    function pinTransparent (isFromLoadedTab)
     {
-        throw 'Not implmented yet';
+        if (isFromLoadedTab)
+        {
+            var selected = $('li > span.ui-selected', loadedResult);
+            selected.parent ().addClass ('loaded transparent');
+            viewport.show ({ transparent: true, fileIds: selected.parent ().data ('fileIds') });
+        }
+        else
+        {
+            var selected = $('li.ui-selected', searchResult);
+            if (selected.length != 0)
+                showConcept (selected.data ('concept'), true);
+        }
     }
 
-    function loadTransparent ()
+    function unpinAllTransparent ()
     {
-        throw 'Not implmented yet';
+        loadedResult.children ('.loaded.transparent').each (function (i, el)
+        {
+            viewport.hide ({ fileIds: $(el).data ('fileIds') });
+            $(el).remove ();
+        });
     }
 
-    function clearTransparent ()
+    function pinOpaque (isFromLoadedTab)
     {
-        throw 'Not implmented yet';
+        if (isFromLoadedTab)
+        {
+            var selected = $('li > span.ui-selected', loadedResult);
+            selected.parent ().addClass ('loaded').removeClass ('transparent');
+            viewport.show ({ transparent: false, fileIds: selected.parent ().data ('fileIds') });
+        }
+        else
+        {
+            var selected = $('li.ui-selected', searchResult);
+            if (selected.length != 0)
+                showConcept (selected.data ('concept'), false);
+        }
     }
 
-    function loadOpaque ()
+    function unpinAllOpaque ()
     {
-        throw 'Not implmented yet';
+        loadedResult.children ('.loaded').not ('.transparent').each (function (i, el)
+        {
+            viewport.hide ({ fileIds: $(el).data ('fileIds') });
+            $(el).remove ();
+        });
     }
 
-    function clearOpaque ()
+    function unpinSelected ()
     {
-        throw 'Not implmented yet';
-    }
+        var selected = $('li > span.ui-selected', loadedResult);
+        selected.parent ().removeClass ();
+        selected.parent ().children ('ul').remove ();
+        selected.parent ().children ('button').children ('span').removeClass ('ui-icon-minus').addClass ('ui-icon-plus');
 
-    function clearAllOpaque ()
-    {
-        throw 'Not implmented yet';
+        selected.removeClass ('ui-selected');
+        if (selected.length != 0)
+        {
+            viewport.deselect ({ fileIds: selected.parent ().data ('fileIds') });
+            viewport.hide     ({ fileIds: selected.parent ().data ('fileIds') });
+        }
     }
 
     function refresh ()
@@ -227,7 +272,7 @@ function TabsControl (sig, ontology, viewport)
 
     function help ()
     {
-        $('#toolbar button').each (function (i, el)
+        $('#loaded_toolbar button').each (function (i, el)
         {
             var start = i * 2000, stop = start + 3000;
             setTimeout (function () { $(el).tooltip ('open'); }, start);
@@ -247,7 +292,6 @@ function TabsControl (sig, ontology, viewport)
                 {
                     ontology.conceptRetrieved (parentConcept).done (function (parentConceptObj)
                     {
-                        $.extend (parentConceptObj, { loaded: false, transparent: false });
                         btn.parent ().before (createLi (parentConceptObj));
                     });
                 });
@@ -270,6 +314,9 @@ function TabsControl (sig, ontology, viewport)
     function childrenToggle (button)
     {
         var btn = $(button), span = btn.children ('span.ui-icon');
+        var isLoaded = btn.parent ().hasClass ('loaded');
+        var isTransparent = btn.parents ('li.transparent').length !== 0;
+
         if (span.hasClass ('ui-icon-plus'))
         {
             span.removeClass ('ui-icon-plus').addClass ('ui-icon-minus');
@@ -280,8 +327,7 @@ function TabsControl (sig, ontology, viewport)
                 {
                     ontology.conceptRetrieved (treeConceptId).done (function (concept)
                     {
-                        $.extend (concept, { loaded: false, transparent: false });
-                        ul.append (createLi (concept));
+                        ul.append (createLi (concept, isLoaded ? 'loaded' + (isTransparent ? ' transparent' : '') : ''));
                     });
                 });
             });
@@ -296,24 +342,55 @@ function TabsControl (sig, ontology, viewport)
     function createLi (concept, classes)
     {
         return $('<li/>')
-            .attr ('data-concept', concept.tree + '.' + concept.id)
-            .data ('transparent', concept.transparent)
-            .data ('loaded', concept.loaded)
+            .attr ('data-concept', concept.key)
+            .data ('fileIds', concept.fileIds)
             .addClass (classes)
-            .click (function (evnt)
-            {
-                $('li > span.ui-selected', loadedResult).removeClass ('ui-selected');
-                $('> span', $(this)).addClass ('ui-selected');
-                evnt.stopPropagation ();
-            })
             .append ($('<button/>').button ({ text: false, icons: { primary: 'ui-icon-plus'}})
-                                    .removeClass ('ui-button-icon-only')
-                                    .click (function () { parentsToggle (this); })
-                                    .focus (function () { this.blur (); }))
-            .append ($('<span/>').text (concept.name))
+                                   .removeClass ('ui-button-icon-only')
+                                   .click (function (evnt) { parentsToggle (this); evnt.stopPropagation (); })
+                                   .focus (function () { this.blur (); }))
+            .append ($('<span/>').text (concept.name).click (function (evnt) { select (this); evnt.stopPropagation (); }))
             .append ($('<button/>').button ({ text: false, icons: { primary: 'ui-icon-plus'}})
-                                    .removeClass ('ui-button-icon-only')
-                                    .click (function () { childrenToggle (this); })
-                                    .focus (function () { this.blur (); }));
+                                   .removeClass ('ui-button-icon-only')
+                                   .click (function (evnt) { childrenToggle (this); evnt.stopPropagation (); })
+                                   .focus (function () { this.blur (); }));
+    }
+
+    function showConcept (treeConceptId, isTransparent)
+    {
+        ontology.conceptRetrieved (treeConceptId).done (function (concept)
+        {
+            concept.transparent = isTransparent;
+            viewport.show (concept);
+            loadedResult.append (createLi (concept, 'loaded' + (isTransparent ? ' transparent' : '')));
+            console.log (concept.name + '(' + treeConceptId + ')');
+        });
+    };
+
+    function select (that)
+    {
+        var oldSelected = $('li > span.ui-selected', loadedResult);
+        deselectSpan (oldSelected);
+
+        if (!oldSelected.is ($(that)))
+            selectSpan ($(that));
+    }
+
+    function selectSpan (liSpan)
+    {
+        liSpan.addClass ('ui-selected');
+
+        if (liSpan.parent ().hasClass ('transparent'))
+            var isTransparent = true;
+
+        viewport.select ({ transparent: isTransparent, fileIds: liSpan.parent ().data ('fileIds') });
+    }
+
+    function deselectSpan (liSpan)
+    {
+        liSpan.removeClass ('ui-selected');
+
+        if (liSpan.length != 0)
+            viewport.deselect ({ fileIds: liSpan.parent ().data ('fileIds') });
     }
 }

@@ -4,6 +4,7 @@
         <title>Medical Neuroscience Atlas, WebGL 3D Brain</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <meta name="description" content="View anatomical structures in your browser">
         <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
         <link rel="stylesheet" href="css/styles.css">
         <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -24,40 +25,31 @@
                 <li><a href="#help_tab">Help</a></li>
             </ul>
             <div id="loaded_tab">
-                <div id="toolbar" class="ui-widget-header ui-corner-all">
+                <div id="loaded_toolbar" class="ui-widget-header ui-corner-all">
                     <span id="toolbar_transparent">
-                        <button id="clear_all_transparent">clear all transparent</button>
-                        <button id="load_transparent">load transparent</button>
-                        <button id="clear_transparent">clear transparent</button>
+                        <button id="loaded_btn_pin_transparent">pin as transparent</button>
+                        <button id="btn_unpin_all_transparent">unpin all transparent</button>
                     </span>
                     <span id="toolbar_opaque">
-                        <button id="load_opaque">load opaque</button>
-                        <button id="clear_opaque">clear opaque</button>
-                        <button id="clear_all_opaque">clear all opaque</button>
+                        <button id="loaded_btn_pin_opaque">pin as opaque</button>
+                        <button id="btn_unpin_all_opaque">unpin all opaque</button>
                     </span>
-                    <span id="toolbar_other">
-                        <button id="refresh">leave only loaded concepts</button>
-                        <button id="help">help</button>
-                    </span>
-                </div>
-                <div id="loaded_tab_load_type" class="load-type">
-                    <input type="radio" id="loaded_tab_radio_transparent" name="loaded_load_type" checked="checked">
-                    <label for="loaded_tab_radio_transparent">Transparent</label>
-                    <input type="radio" id="loaded_tab_radio_opaque" name="loaded_load_type">
-                    <label for="loaded_tab_radio_opaque">Opaque</label>
+                    <button id="btn_unpin">unpin selected</button>
+                    <button id="btn_refresh">leave only pinned concepts in the hierarchy</button>
+                    <button id="btn_help">help</button>
                 </div>
                 <ul id="loaded_result"></ul>
             </div>
             <div id="search_tab">
-                <div id="search_tab_load_type" class="load-type">
-                    <input type="radio" id="search_tab_radio_transparent" name="search_load_type" checked="checked">
-                    <label for="search_tab_radio_transparent">Transparent</label>
-                    <input type="radio" id="search_tab_radio_opaque" name="search_load_type">
-                    <label for="search_tab_radio_opaque">Opaque</label>
+                <div id="search_toolbar" class="ui-widget-header ui-corner-all">
+                    <button id="search_btn_pin_transparent">pin as transparent</button>
+                    <button id="search_btn_pin_opaque">pin as opaque</button>
                 </div>
-                <button id="search_btn" tabindex="2">Search</button>
-                <div id="search_div">
-                    <input id="search_text" class="ui-button ui-corner-all" type="text" tabindex="1" autocomplete="off">
+                <div id="search_grp">
+                    <button id="search_btn" tabindex="2">Search</button>
+                    <div id="search_div">
+                        <input id="search_text" class="ui-button ui-corner-all" type="text" tabindex="1" autocomplete="off">
+                    </div>
                 </div>
                 <ul id="search_result"></ul>
             </div>
@@ -76,10 +68,10 @@
                     <tr><td>Esc/Active tab click</td><td> - </td><td>collapse tabs</td></tr>
                     <tr><td colspan="3">While focused in the search input field:</td></tr>
                     <tr><td>Enter</td><td> - </td><td>search for substring</td></tr>
-                    <tr><td>Down</td><td> - </td><td>select next</td></tr>
-                    <tr><td>Up</td><td> - </td><td>select previous</td></tr>
-                    <tr><td>Ctrl+Enter</td><td> - </td><td>load selected</td></tr>
-                    <tr><td>Shift+Enter</td><td> - </td><td>load selected transparent</td></tr>
+                    <tr><td>Down</td><td> - </td><td>next</td></tr>
+                    <tr><td>Up</td><td> - </td><td>previous</td></tr>
+                    <tr><td>Ctrl+Enter</td><td> - </td><td>pin selected</td></tr>
+                    <tr><td>Shift+Enter</td><td> - </td><td>pin selected transparent</td></tr>
                 </table>
             </div>
         </div>

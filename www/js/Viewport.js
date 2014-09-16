@@ -5,6 +5,7 @@ function Viewport (sig, container)
         binaryLoader = new THREE.BinaryLoader (true),
         opaqueObjects = [],
         transparentObjects = [],
+        elements = [],
         labels = [],
         pathway, spline,
         resetCamera = function () {},
@@ -109,52 +110,70 @@ function Viewport (sig, container)
         requestAnimationFrame (animate);
     }) ();
 
-    this.load = function (concept)
+    this.show = function (concept)
     {
-        if (concept.transparent)
-        {
-            transparentObjects.forEach (function (object)
-            {
-                scene.remove (object);
-                object.geometry.dispose ();
-                object.material.dispose ();
-            });
-            transparentObjects = [];
-        }
-        else
-        {
-            opaqueObjects.forEach (function (object)
-            {
-                scene.remove (object);
-                object.geometry.dispose ();
-                object.material.dispose ();
-            });
-            opaqueObjects = [];
-        }
-
         concept.fileIds.forEach (function (fileId)
         {
-            var fileUrl = 'data/bin/' + fileId + '.js';
-            $.ajax ({ url: fileUrl, type: 'HEAD' }).done (function ()
+            if (!elements[fileId])
+                elements[fileId] = {};
+
+            elements[fileId].loaded = true;
+            elements[fileId].transparent = concept.transparent;
+
+            updateElement (fileId);
+        });
+    }
+
+    this.select = function (concept)
+    {
+        concept.fileIds.forEach (function (fileId)
+        {
+            if (!elements[fileId])
+                elements[fileId] = {};
+
+            elements[fileId].selected = true;
+
+            updateElement (fileId);
+        });
+    }
+
+    this.hide = function (concept)
+    {
+        concept.fileIds.forEach (function (fileId)
+        {
+            if (elements[fileId])
             {
-                binaryLoader.load (fileUrl, function (geometry, material)
+                elements[fileId].loaded = false;
+
+                if (!elements[fileId].selected)
                 {
-                    var mesh;
-                    if (concept.transparent)
-                    {
-                        mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color:       0x777777,
-                                                                                          transparent: true,
-                                                                                          opacity:     0.3 }));
-                        transparentObjects.push (mesh);
-                    }
-                    else
-                    {
-                        mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
-                        opaqueObjects.push (mesh);
-                    }
-                    scene.add (mesh);
-                });
-            });
+                    elements[fileId].transparent = false;
+                    scene.remove (elements[fileId].mesh);
+                }
+            }
+        });
+    }
+
+    this.deselect = function (concept)
+    {
+        concept.fileIds.forEach (function (fileId)
+        {
+            if (elements[fileId])
+            {
+                elements[fileId].selected = false;
+
+                scene.remove (elements[fileId].mesh);
+
+                if (elements[fileId].loaded)
+                {
+                    updateMesh (elements[fileId]);
+                    scene.add (elements[fileId].mesh);
+                }
+                else
+                {
+                    elements[fileId].transparent = false;
+                }
+            }
         });
     }
 
@@ -259,8 +278,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
-        that.load ({ transparent: false, fileIds: [] });
-        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
+        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
                                                   'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
@@ -321,8 +339,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
 
-        that.load ({ transparent: false, fileIds: [] });
-        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
+        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
                                                   'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
@@ -381,8 +398,7 @@ function Viewport (sig, container)
                        pos: new THREE.Vector3 (-62.3792, -77.2263, 1575.3464) });
         addLabels ();
 
-        that.load ({ transparent: false, fileIds: [] });
-        that.load ({ transparent: true, fileIds: ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
+        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
                                                   'FJ1312', 'FJ1315', 'FJ1318', 'FJ1325', 'FJ1326', 'FJ1333', 'FJ1341',
                                                   'FJ1347', 'FJ1351', 'FJ1361', 'FJ1362', 'FJ1363', 'FJ1366', 'FJ1369',
                                                   'FJ1376', 'FJ1377', 'FJ1775', 'FJ1822', 'FJ1827', 'FJ1798'] });
@@ -441,5 +457,49 @@ function Viewport (sig, container)
         if (pathway) $('#pathway_play').button ('enable');
         enableButtons ();
         controls.enabled = true;
+    }
+
+    function updateElement (fileId)
+    {
+        if (elements[fileId].mesh)
+        {
+            scene.remove (elements[fileId].mesh);
+            updateMesh (elements[fileId]);
+            scene.add (elements[fileId].mesh);
+        }
+        else
+        {
+            var fileUrl = 'data/bin/' + fileId + '.js';
+            $.ajax ({ url: fileUrl, type: 'HEAD' }).done (function ()
+            {
+                binaryLoader.load (fileUrl, function (geometry, material)
+                {
+                    if (elements[fileId].mesh)
+                        geometry.dispose ();
+                    else
+                        elements[fileId].mesh = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ());
+
+                    updateMesh (elements[fileId]);
+                    scene.add (elements[fileId].mesh);
+                });
+            });
+        }
+    }
+
+    function updateMesh (element)
+    {
+        if (element.selected)
+        {
+            element.mesh.material.setValues ({ color: 0xBB9900 });
+            element.mesh.material.setValues ({ transparent: false });
+        }
+        else
+        {
+            element.mesh.material.setValues ({ color: 0x777777 });
+            if (element.transparent)
+                element.mesh.material.setValues ({ transparent: true, opacity: 0.3 });
+            else
+                element.mesh.material.setValues ({ transparent: false });
+        }
     }
 }

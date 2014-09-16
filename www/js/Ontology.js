@@ -110,6 +110,7 @@ function Ontology ()
             {
                 deferred.resolve ({ tree:    concept.tree,
                                     id:      concept.id,
+                                    key:     treeConceptId,
                                     name:    evnt.target.result.name,
                                     fileIds: evnt.target.result.elementFileIds });
             };
