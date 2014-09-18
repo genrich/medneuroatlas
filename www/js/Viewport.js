@@ -11,8 +11,6 @@ function Viewport (sig, container)
         resetCamera = function () {},
         playTime, playFastFraction = 0.20, playLength = 90.0;
 
-    var that = this;
-
     scene = new THREE.Scene ();
 
     scene.add (new THREE.AmbientLight (0x404040));
@@ -26,11 +24,6 @@ function Viewport (sig, container)
 
     controls = new THREE.TrackballControls (camera, container[0]);
     controls.target.set (0, -100, 1500);
-    var updateLightPosition = function ()
-    {
-        light.position.copy (camera.position);
-        light.target.position.copy (controls.target);
-    };
     controls.addEventListener ('change', updateLightPosition);
     updateLightPosition ();
 
@@ -77,8 +70,7 @@ function Viewport (sig, container)
                     camera.lookAt (pos.add (dir));
                     controls.target.set (pos.x, pos.y, pos.z);
 
-                    light.position.copy (camera.position);
-                    light.target.position.copy (controls.target);
+                    updateLightPosition ();
                 }
             }
             else
@@ -221,6 +213,12 @@ function Viewport (sig, container)
         });
     }
 
+    function updateLightPosition ()
+    {
+        light.position.copy (camera.position);
+        light.target.position.copy (controls.target);
+    };
+
     sig.lightTouchPathwayShow.add (function ()
     {
         resetCamera = function ()
@@ -228,6 +226,7 @@ function Viewport (sig, container)
             camera.up.set (0, 0, 1);
             camera.position.set (-110, -237, 1743);
             controls.target.set (-26, -65, 1460);
+            updateLightPosition ();
         };
         resetCamera ();
 
@@ -277,9 +276,6 @@ function Viewport (sig, container)
         labels.push ({ obj: $('<div>').addClass ('text3d').html ('Synaptic contact in<br>primary somatic sensory cortex<br>postcentral gyrus'),
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
-
-        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
-                                                  'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
     sig.painAndTemperaturePathwayShow.add (function ()
@@ -289,6 +285,7 @@ function Viewport (sig, container)
             camera.up.set (0, 0, 1);
             camera.position.set (-110, -237, 1743);
             controls.target.set (-26, -65, 1460);
+            updateLightPosition ();
         };
         resetCamera ();
 
@@ -338,9 +335,6 @@ function Viewport (sig, container)
         labels.push ({ obj: $('<div>').addClass ('text3d').html ('Synaptic contact in<br>primary somatic sensory cortex<br>postcentral gyrus'),
                        pos: new THREE.Vector3 (38.7065, -41.2449, 1613.0336) });
         addLabels ();
-
-        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ3161', 'FJ3164', 'FJ3167', 'FJ3170', 'FJ3172', 'FJ3176',
-                                                  'FJ3177', 'FJ1769', 'FJ1831', 'FJ1797', 'FJ1782'] });
     });
 
     sig.faceLightTouchPathwayShow.add (function ()
@@ -350,6 +344,7 @@ function Viewport (sig, container)
             camera.up.set (0, 0, 1);
             camera.position.set (-78.71, -285.92, 1639.19);
             controls.target.set (-1.49,-99.17,1505.93);
+            updateLightPosition ();
         };
         resetCamera ();
 
@@ -397,11 +392,6 @@ function Viewport (sig, container)
         labels.push ({ obj: $('<div>').addClass ('text3dT').html ('Synaptic contact in<br>primary somatic sensory cortex<br>postcentral gyrus'),
                        pos: new THREE.Vector3 (-62.3792, -77.2263, 1575.3464) });
         addLabels ();
-
-        that.show ({ transparent: true, fileIds: ['FJ2810', 'FJ1283', 'FJ1290', 'FJ1296', 'FJ1300', 'FJ1310', 'FJ1311',
-                                                  'FJ1312', 'FJ1315', 'FJ1318', 'FJ1325', 'FJ1326', 'FJ1333', 'FJ1341',
-                                                  'FJ1347', 'FJ1351', 'FJ1361', 'FJ1362', 'FJ1363', 'FJ1366', 'FJ1369',
-                                                  'FJ1376', 'FJ1377', 'FJ1775', 'FJ1822', 'FJ1827', 'FJ1798'] });
     });
 
     function enableButtons ()
@@ -491,15 +481,19 @@ function Viewport (sig, container)
         if (element.selected)
         {
             element.mesh.material.setValues ({ color: 0xBB9900 });
-            element.mesh.material.setValues ({ transparent: false });
+            element.mesh.material.setValues ({ transparent: false, depthWrite: true });
         }
         else
         {
             element.mesh.material.setValues ({ color: 0x777777 });
             if (element.transparent)
-                element.mesh.material.setValues ({ transparent: true, opacity: 0.3 });
+            {
+                element.mesh.material.setValues ({ transparent: true, opacity: 0.3, depthWrite: false });
+            }
             else
-                element.mesh.material.setValues ({ transparent: false });
+            {
+                element.mesh.material.setValues ({ transparent: false, depthWrite: true });
+            }
         }
     }
 }

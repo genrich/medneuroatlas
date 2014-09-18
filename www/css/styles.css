@@ -187,13 +187,12 @@ footer
     z-index:  3;
 }
 
+#concept_id
+{
+    font-size: 12px;
+}
+
 #copyright
 {
-    position:       absolute;
-    top:            0;
-    left:           0;
-    height:         100%;
-    width:          100%;
-    z-index:        2;
-    text-align:     right;
+    float: right;
 }

@@ -1,6 +1,7 @@
 function TabsControl (sig, ontology, viewport)
 {
-    var that = this;
+    var that = this,
+        conceptId = $('#concept_id');
 
     // tabs ----------------------------------------------------------------------------------------
     $('#tabs').tabs (
@@ -56,9 +57,11 @@ function TabsControl (sig, ontology, viewport)
     {
         searchText.prop ('disabled', true);
 
+        // deselect
         var selectedSearchResult = $('li.ui-selected', searchResult);
         if (selectedSearchResult.length != 0)
         {
+            // conceptId.text ('');
             ontology.conceptRetrieved (selectedSearchResult.data ('concept')).done (function (concept)
             {
                 viewport.deselect (concept);
@@ -81,6 +84,7 @@ function TabsControl (sig, ontology, viewport)
         selected: function (evnt, ui)
         {
             var key = $(ui.selected).data ('concept');
+            // conceptId.text (key);
             ontology.conceptRetrieved (key).done (function (concept)
             {
                 viewport.select (concept);
@@ -89,6 +93,7 @@ function TabsControl (sig, ontology, viewport)
         unselected: function (evnt, ui)
         {
             var key = $(ui.unselected).data ('concept');
+            // conceptId.text ('');
             ontology.conceptRetrieved (key).done (function (concept)
             {
                 viewport.deselect (concept);
@@ -98,7 +103,7 @@ function TabsControl (sig, ontology, viewport)
 
     searchText.keydown (function (evnt)
     {
-        if (evnt.keyCode == 38 || evnt.keyCode == 40 || evnt.keyCode == 189) // up/down/#
+        if (evnt.keyCode == 38 || evnt.keyCode == 40 || evnt.keyCode == 188) // up/down/,
             evnt.preventDefault ();
     });
 
@@ -154,10 +159,46 @@ function TabsControl (sig, ontology, viewport)
     });
 
     // pathways tab --------------------------------------------------------------------------------
-    $('#light_touch_pathway_show')         .button ().click (function (evnt) { sig.lightTouchPathwayShow        .dispatch (); });
-    $('#pain_and_temperature_pathway_show').button ().click (function (evnt) { sig.painAndTemperaturePathwayShow.dispatch (); });
-    $('#face_light_touch_pathway_show')    .button ().click (function (evnt) { sig.faceLightTouchPathwayShow    .dispatch (); });
-    $('#pathway_clear')                    .button ().click (function (evnt) { sig.pathwayClear                 .dispatch (); });
+    $('#light_touch_pathway_show').button ().click (function (evnt)
+    {
+        showConcept ('isa.FMA7163',   true);
+        showConcept ('isa.FMA9915',   true);
+        showConcept ('isa.FMA62004',  true);
+        showConcept ('isa.FMA258716', true);
+        showConcept ('isa.FMA72666',  true);
+
+        sig.lightTouchPathwayShow.dispatch ();
+    });
+
+    $('#pain_and_temperature_pathway_show').button ().click (function (evnt)
+    {
+        showConcept ('isa.FMA7163',   true);
+        showConcept ('isa.FMA9915',   true);
+        showConcept ('isa.FMA62004',  true);
+        showConcept ('isa.FMA258716', true);
+        showConcept ('isa.FMA72666',  true);
+
+        sig.painAndTemperaturePathwayShow.dispatch ();
+    });
+
+    $('#face_light_touch_pathway_show').button ().click (function (evnt)
+    {
+        showConcept ('isa.FMA7163',   true);
+        showConcept ('isa.FMA52640',  true);
+        showConcept ('isa.FMA52623',  true);
+        showConcept ('isa.FMA67943',  true);
+        showConcept ('isa.FMA258714', true);
+        showConcept ('isa.FMA72665',  true);
+
+        sig.faceLightTouchPathwayShow    .dispatch ();
+    });
+
+    $('#pathway_clear').button ().click (function (evnt)
+    {
+        unpinAllTransparent ();
+        unpinAllOpaque ();
+        sig.pathwayClear.dispatch ();
+    });
 
     $('#pathway_play').button ({ disabled: true, text: false, icons: { primary: "ui-icon-play" }})
         .click  (function (evnt) { sig.pathwayPlay.dispatch (); });
@@ -167,10 +208,10 @@ function TabsControl (sig, ontology, viewport)
     {
         switch (evnt.keyCode)
         {
-        case 189: // #
+        case 188: // ,
             $('#tabs').tabs ('option', 'active', 0);
             break;
-        case 191: // /
+        case 190: // .
             $('#tabs').tabs ('option', 'active', 1);
             break;
         case 27:
@@ -378,6 +419,8 @@ function TabsControl (sig, ontology, viewport)
 
     function selectSpan (liSpan)
     {
+        // conceptId.text (liSpan.parent ().data ('concept'));
+
         liSpan.addClass ('ui-selected');
 
         if (liSpan.parent ().hasClass ('transparent'))
@@ -388,6 +431,8 @@ function TabsControl (sig, ontology, viewport)
 
     function deselectSpan (liSpan)
     {
+        // conceptId.text ('');
+
         liSpan.removeClass ('ui-selected');
 
         if (liSpan.length != 0)
