@@ -114,6 +114,11 @@ function Ontology ()
                                     name:    evnt.target.result.name,
                                     fileIds: evnt.target.result.elementFileIds });
             };
+
+            request.onerror = function ()
+            {
+                deferred.reject ();
+            }
         });
 
         return deferred.promise ();

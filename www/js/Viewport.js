@@ -150,20 +150,21 @@ function Viewport (sig, container)
     {
         concept.fileIds.forEach (function (fileId)
         {
-            if (elements[fileId])
+            var element = elements[fileId];
+            if (element)
             {
-                elements[fileId].selected = false;
+                element.selected = false;
 
-                scene.remove (elements[fileId].mesh);
+                scene.remove (element.mesh);
 
-                if (elements[fileId].loaded)
+                if (element.mesh && element.loaded)
                 {
-                    updateMesh (elements[fileId]);
-                    scene.add (elements[fileId].mesh);
+                    updateMesh (element);
+                    scene.add (element.mesh);
                 }
                 else
                 {
-                    elements[fileId].transparent = false;
+                    element.transparent = false;
                 }
             }
         });
