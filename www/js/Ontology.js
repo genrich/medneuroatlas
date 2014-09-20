@@ -1,6 +1,7 @@
 function Ontology ()
 {
-    const dbName = 'medneuroatlas', dbVersion = 2;
+    const dbName = 'medneuroatlas', dbVersion = 3;
+    const load_batch = 100;
 
     var dbOpened = $.Deferred (), dbUpgraded, dbDataLoaded = [];
 
@@ -200,18 +201,40 @@ function Ontology ()
 
         $.get ('data/' + storeName + '.txt', function (data)
         {
-            var lines = data.split ('\n');
+            var lines = data.trim ().split ('\n');
 
             var trx = db.transaction ([storeName], 'readwrite');
             trx.oncomplete = function () { deferred.resolve (); };
+            trx.onabort    = function () { deferred.reject  (); };
+            trx.onerror    = function () { deferred.reject  (); };
             var objectStore = trx.objectStore (storeName);
 
-            for (var i = 1; i < lines.length; i++)
+            var progress = createProgress (storeName, lines.length),
+                i = 0;
+            (function processLine ()
             {
-                var fields = lines[i].split ('\t');
-                if (fields.length == 3)
-                objectStore.add ({ conceptId: fields[0], representationId: fields[1], name: fields[2] });
-            }
+                if (i < lines.length)
+                {
+                    var fields = lines[i++].split ('\t');
+                    if (fields.length != 3)
+                        throw 'expecting 3 fields in "' + storeName + '" line: ' + (i + 1);
+
+                    if (i % load_batch == 0)
+                    {
+                        objectStore.add ({ conceptId: fields[0], representationId: fields[1], name: fields[2] }).onsuccess = processLine;
+                        updateProgress (progress, i);
+                    }
+                    else
+                    {
+                        objectStore.add ({ conceptId: fields[0], representationId: fields[1], name: fields[2] });
+                        processLine ();
+                    }
+                }
+                else
+                {
+                    destroyProgress (progress);
+                }
+            }) ();
         });
 
         return deferred.promise ();
@@ -223,18 +246,40 @@ function Ontology ()
 
         $.get ('data/' + storeName + '.txt', function (data)
         {
-            var lines = data.split ('\n');
+            var lines = data.trim ().split ('\n').slice (1);
 
             var trx = db.transaction ([storeName], 'readwrite');
             trx.oncomplete = function () { deferred.resolve (); };
+            trx.onabort    = function () { deferred.reject  (); };
+            trx.onerror    = function () { deferred.reject  (); };
             var objectStore = trx.objectStore (storeName);
 
-            for (var i = 1; i < lines.length; i++)
+            var progress = createProgress (storeName, lines.length),
+                i = 0;
+            (function processLine ()
             {
-                var fields = lines[i].split ('\t');
-                if (fields.length == 4)
-                objectStore.add ({ parentId: fields[0], childId: fields[2] });
-            }
+                if (i < lines.length)
+                {
+                    var fields = lines[i++].split ('\t');
+                    if (fields.length != 4)
+                        throw 'expecting 4 fields in "' + storeName + '" line: ' + (i + 1);
+
+                    if (i % load_batch == 0)
+                    {
+                        objectStore.add ({ parentId: fields[0], childId: fields[2] }).onsuccess = processLine;
+                        updateProgress (progress, i);
+                    }
+                    else
+                    {
+                        objectStore.add ({ parentId: fields[0], childId: fields[2] });
+                        processLine ();
+                    }
+                }
+                else
+                {
+                    destroyProgress (progress);
+                }
+            }) ();
         });
 
         return deferred.promise ();
@@ -246,31 +291,61 @@ function Ontology ()
 
         $.get ('data/' + storeName + '.txt', function (data)
         {
-            var lines = data.split ('\n');
+            var lines = data.trim ().split ('\n').slice (1);
 
             var trx = db.transaction ([storeName], 'readwrite');
             trx.oncomplete = function () { deferred.resolve (); };
+            trx.onabort    = function () { deferred.reject  (); };
+            trx.onerror    = function () { deferred.reject  (); };
             var objectStore = trx.objectStore (storeName);
 
-            // groupBy conceptId
-            var id, name, fileIds = [];
-            for (var i = 1; i < lines.length; i++)
-            {
-                var fields = lines[i].split ('\t');
-                if (fields.length !== 3)
-                    continue;
+            var progress = createProgress (storeName, lines.length),
+                i = 0, id, name, fileIds = [], call_count = 0;
 
-                if (id && id !== fields[0])
+            (function processLine ()
+            {
+                ++call_count;
+
+                if (i < lines.length)
+                {
+                    var fields = lines[i++].split ('\t');
+                    if (fields.length != 3)
+                        throw 'expecting 3 fields in "' + storeName + '" line: ' + (i + 1);
+
+                    if (id && id !== fields[0]) // groupBy id
+                    {
+                        if (load_batch < call_count)
+                        {
+                            call_count = 0;
+                            objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds }).onsuccess = processLine;
+                            id      =  fields[0];
+                            name    =  fields[1];
+                            fileIds = [fields[2]];
+                            updateProgress (progress, i);
+                        }
+                        else
+                        {
+                            objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds });
+                            id      =  fields[0];
+                            name    =  fields[1];
+                            fileIds = [fields[2]];
+                            processLine ();
+                        }
+                    }
+                    else
+                    {
+                        id   =        fields[0];
+                        name =        fields[1];
+                        fileIds.push (fields[2]);
+                        processLine ();
+                    }
+                }
+                else
                 {
                     objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds });
-                    fileIds = [];
+                    destroyProgress (progress);
                 }
-
-                id = fields[0];
-                name = fields[1];
-                fileIds.push (fields[2]);
-            }
-            objectStore.add ({ conceptId: id, name: name, elementFileIds: fileIds });
+            }) ();
         });
 
         return deferred.promise ();
@@ -280,5 +355,36 @@ function Ontology ()
     {
         var vals = treeConceptId.split ('.');
         return {tree: vals[0], id: vals[1]};
+    }
+
+    function createProgress (name, max)
+    {
+        var progress = $('<div/>'), progressLabel = $('<span/>');
+        progress.css ({ position: 'relative', 'z-index': 10 });
+        progressLabel.css ({ position: 'absolute', width: '100%', 'text-align': 'center' });
+        $('body').prepend (progress.append (progressLabel));
+        progress.progressbar (
+        {
+            value:  0,
+            max:    max,
+            change: function ()
+            {
+                var percent = (progress.progressbar ('value') / progress.progressbar ('option', 'max') * 100).toFixed ();
+                progressLabel.text ('preloading organ data ' + percent + '%');
+            }
+        });
+
+        return progress;
+    }
+
+    function updateProgress (progress, value)
+    {
+        progress.progressbar ('value', value);
+    }
+
+    function destroyProgress (progress)
+    {
+        progress.progressbar ('destroy');
+        progress.remove ();
     }
 }
