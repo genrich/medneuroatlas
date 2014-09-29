@@ -161,6 +161,9 @@ function TabsControl (sig, ontology, viewport)
     // pathways tab --------------------------------------------------------------------------------
     $('#light_touch_pathway_show').button ().click (function (evnt)
     {
+        unpinAllTransparent ();
+        unpinAllOpaque ();
+
         showConcept ('isa.FMA7163',   true);
         showConcept ('isa.FMA9915',   true);
         showConcept ('isa.FMA62004',  true);
@@ -172,6 +175,9 @@ function TabsControl (sig, ontology, viewport)
 
     $('#pain_and_temperature_pathway_show').button ().click (function (evnt)
     {
+        unpinAllTransparent ();
+        unpinAllOpaque ();
+
         showConcept ('isa.FMA7163',   true);
         showConcept ('isa.FMA9915',   true);
         showConcept ('isa.FMA62004',  true);
@@ -183,6 +189,9 @@ function TabsControl (sig, ontology, viewport)
 
     $('#face_light_touch_pathway_show').button ().click (function (evnt)
     {
+        unpinAllTransparent ();
+        unpinAllOpaque ();
+
         showConcept ('isa.FMA7163',   true);
         showConcept ('isa.FMA52640',  true);
         showConcept ('isa.FMA52623',  true);
