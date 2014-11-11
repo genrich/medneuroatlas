@@ -1,7 +1,6 @@
 function Viewport (sig, container)
 {
     var camera, scene, renderer, controls, light,
-        projector = new THREE.Projector (),
         binaryLoader = new THREE.BinaryLoader (true),
         opaqueObjects = [],
         transparentObjects = [],
@@ -43,6 +42,12 @@ function Viewport (sig, container)
         {
             var delta = (timestamp - prevTimestamp) / 1000;
             prevTimestamp = timestamp;
+
+            if (hollowFacePlayTime !== undefined)
+            {
+                hollowFacePlayTime += delta * 0.2;
+                face.quaternion.setFromAxisAngle (new THREE.Vector3 (0, 0, 1), hollowFacePlayTime);
+            }
 
             if (playTime !== undefined)
             {
@@ -170,6 +175,25 @@ function Viewport (sig, container)
         });
     }
 
+    var face, hollowFacePlayTime;
+    this.hollowFaceStart = function ()
+    {
+        binaryLoader.load ('data/bin/face.js', function (geometry, material)
+        {
+            camera.position.set (0, -300, 1500);
+            geometry.computeVertexNormals ();
+            face = new THREE.Mesh (geometry, new THREE.MeshLambertMaterial ({ color: 0x777777 }));
+            scene.add (face);
+            hollowFacePlayTime = -1;
+        });
+    }
+
+    this.hollowFaceStop = function ()
+    {
+        hollowFacePlayTime = undefined;
+        scene.remove (face);
+    }
+
     function onWindowResize ()
     {
         camera.aspect = container.width () / container.height ();
@@ -197,7 +221,7 @@ function Viewport (sig, container)
 
     function to2d (vec3d)
     {
-        var vector = projector.projectVector (vec3d.clone(), camera);
+        var vector = vec3d.clone().project (camera);
         vector.x =  (vector.x + 1) / 2 * container.width ();
         vector.y = -(vector.y - 1) / 2 * container.height ();
         return vector;
@@ -218,6 +242,7 @@ function Viewport (sig, container)
     {
         light.position.copy (camera.position);
         light.target.position.copy (controls.target);
+        light.target.updateMatrixWorld ();
     };
 
     sig.lightTouchPathwayShow.add (function ()

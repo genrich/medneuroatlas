@@ -6,10 +6,13 @@ function TabsControl (sig, ontology, viewport)
     // tabs ----------------------------------------------------------------------------------------
     $('#tabs').tabs (
     {
+        active: false,
         activate: function (evnt, ui)
         {
             if (ui.newTab.text () == 'Search')
                 searchText.focus ();
+
+            viewport.hollowFaceStop ();
         },
         collapsible: true,
         hide: { effect: "blind", duration: 200 },
@@ -45,7 +48,7 @@ function TabsControl (sig, ontology, viewport)
     var loadedResult = $('#loaded_result');
 
     // search tab ----------------------------------------------------------------------------------
-    var searchText = $('#search_text'), searchResult = $('#search_result');
+    var searchText = $('#search_text'), searchResult = $('#search_result'), searchBtn = $('#search_btn');
     $("#search_btn_pin_transparent").button ({ text: false, icons: { primary: "ui-icon-radio-off" }})
                                     .tooltip ({ show: { delay: 1000 }})
                                     .click (function () { pinTransparent (false); });
@@ -53,30 +56,33 @@ function TabsControl (sig, ontology, viewport)
                                .tooltip ({ show: { delay: 1000 }})
                                .click (function () { pinOpaque (false); });
 
-    $('#search_btn').button ().click (function (evnt)
+    searchBtn.button ().click (function (evnt)
     {
         searchText.prop ('disabled', true);
+        searchBtn.button ('disable');
 
-        // deselect
-        var selectedSearchResult = $('li.ui-selected', searchResult);
-        if (selectedSearchResult.length != 0)
+        $.when.apply ($, $('li.ui-selected', searchResult).map (function (i, elmnt)
         {
-            // conceptId.text ('');
-            ontology.conceptRetrieved (selectedSearchResult.data ('concept')).done (function (concept)
+            return ontology.conceptRetrieved ($(elmnt).data ('concept')).done (function (concept)
             {
                 viewport.deselect (concept);
             });
-        }
-
-        var li = [];
-        ontology.search (searchText.val ()).forEach (function (el)
+        })).then (function ()
         {
-            li.push ('<li data-concept="' + el.key + '" class="ui-selectee">' + el.name + '</li>');
+            ontology.search (searchText.val ()).done (function (list)
+            {
+                var li = [];
+                list.forEach (function (el)
+                {
+                    li.push ('<li data-concept="' + el.key + '" class="ui-selectee">' + el.name + '</li>');
+                });
+
+                searchResult.html (li.join (''));
+
+                searchText.prop ('disabled', false);
+                searchBtn.button ('enable');
+            });
         });
-
-        searchResult.html (li.join (''));
-
-        searchText.prop ('disabled', false);
     });
 
     searchResult.selectable (
@@ -144,7 +150,7 @@ function TabsControl (sig, ontology, viewport)
                 break;
             case 40: // down
                 var selected = $('.ui-selected',   searchResult);
-                first    = $('li:first-child', searchResult);
+                    first    = $('li:first-child', searchResult);
                 if (selected.length)
                 {
                     selected.removeClass ('ui-selected');
@@ -233,16 +239,26 @@ function TabsControl (sig, ontology, viewport)
     if (location.hash)
     {
         var str = decodeURI (location.hash.substring (1));
-        var strs = str.split ('|'); if (strs.length != 2) return;
 
-        var opaqueOrgan      = strs[0];
-        var transparentOrgan = strs[1];
+        if (str === 'hollow-face')
+        {
+             viewport.hollowFaceStart ();
+        }
+        else
+        {
+            var strs = str.split ('|'); if (strs.length != 2) return;
 
-        showConcept (opaqueOrgan, false);
-        showConcept (transparentOrgan, true);
+            var opaqueOrgan      = strs[0];
+            var transparentOrgan = strs[1];
+
+            $('#tabs').tabs ('option', 'active', 0);
+            showConcept (opaqueOrgan, false);
+            showConcept (transparentOrgan, true);
+        }
     }
     else
     {
+        $('#tabs').tabs ('option', 'active', 0);
         showConcept ('partof.FMA50801', false);
         showConcept ('partof.FMA53672', true);
     }

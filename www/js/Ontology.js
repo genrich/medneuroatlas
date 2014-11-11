@@ -3,105 +3,42 @@ function Ontology ()
     const dbName = 'medneuroatlas', dbVersion = 3;
     const load_batch = 100;
 
-    var dbOpened = $.Deferred (), dbUpgraded, dbDataLoaded = [];
-
-    var request = indexedDB.open (dbName, dbVersion);
-    request.onsuccess = function (evnt)
-    {
-        if (dbUpgraded)
-            $.when.apply ($, dbDataLoaded).then (function () { dbOpened.resolve (evnt.target.result); });
-        else
-            dbOpened.resolve (evnt.target.result);
-    }
-
-    request.onupgradeneeded = function (evnt)
-    {
-        dbUpgraded = $.Deferred ();
-        var db = evnt.target.result;
-        var objectStore;
-
-        ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
-        {
-            if (db.objectStoreNames.contains (storeName))
-                db.deleteObjectStore (storeName);
-            objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-            objectStore.createIndex ('representationId', 'representationId', { unique: true });
-        });
-
-        ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
-        {
-            if (db.objectStoreNames.contains (storeName))
-                db.deleteObjectStore (storeName);
-            objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
-            objectStore.createIndex ('parentId', 'parentId', { unique: false });
-            objectStore.createIndex ('childId',  'childId',  { unique: false });
-        });
-
-        ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
-        {
-            if (db.objectStoreNames.contains (storeName))
-                db.deleteObjectStore (storeName);
-            objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
-            objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
-        });
-
-        objectStore.transaction.oncomplete = function ()
-        {
-            ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
-            {
-                dbDataLoaded.push (loadPartsList (db, storeName));
-            });
-
-            ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
-            {
-                dbDataLoaded.push (loadInclusionRelationList (db, storeName));
-            });
-
-
-            ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
-            {
-                dbDataLoaded.push (loadElementParts (db, storeName));
-            });
-
-            localStorage.clear ();
-            loadSearchablePartsList ('isa',    'isa_parts_list_e');
-            loadSearchablePartsList ('partof', 'partof_parts_list_e');
-        };
-    }
-
-    if (localStorage.length == 0)
-    {
-        loadSearchablePartsList ('isa',    'isa_parts_list_e');
-        loadSearchablePartsList ('partof', 'partof_parts_list_e');
-    }
+    var dbDeferred, localStorageDeferred;
 
     this.search = function (str)
     {
-        var results = [], foundCount = 0;
-        const limit = 30;
+        var deferred = $.Deferred ();
 
-        for (var i = 0; i < localStorage.length; i++)
+        getLocalStorage ().done (function ()
         {
-            var key = localStorage.key (i); // key = '(isa|partof).FMA123'
-            var name = localStorage.getItem (key);
-            if (name.indexOf (str) !== -1)
+            var results = [], foundCount = 0;
+            const limit = 30;
+
+            for (var i = 0; i < localStorage.length; i++)
             {
-                ++foundCount;
-                results.push ({ key: key, name: name });
+                var key = localStorage.key (i); // key = '(isa|partof).FMA123'
+                var name = localStorage.getItem (key);
+                if (name.indexOf (str) !== -1)
+                {
+                    ++foundCount;
+                    results.push ({ key: key, name: name });
+                }
+
+                if (foundCount >= limit)
+                    break;
             }
 
-            if (foundCount >= limit)
-                break;
-        }
+            deferred.resolve (results);
+        });
 
-        return results;
+        return deferred.promise ();
     };
 
     this.conceptRetrieved = function (treeConceptId)
     {
         var deferred = $.Deferred ();
 
-        dbOpened.done (function (db)
+        getDB ().done (function (db)
         {
             var concept = parseConcept (treeConceptId);
             var storeName = concept.tree + '_element_parts';
@@ -132,7 +69,7 @@ function Ontology ()
 
         var deferred = $.Deferred (), parents = [], storeName = tree + '_inclusion_relation_list';
 
-        dbOpened.done (function (db)
+        getDB ().done (function (db)
         {
             db.transaction (storeName).objectStore (storeName)
                 .index ('childId').openCursor (IDBKeyRange.only (conceptId)).onsuccess = function (evnt)
@@ -160,7 +97,7 @@ function Ontology ()
 
         var deferred = $.Deferred (), children = [], storeName = tree + '_inclusion_relation_list';
 
-        dbOpened.done (function (db)
+        getDB ().done (function (db)
         {
             db.transaction (storeName).objectStore (storeName)
                 .index ('parentId').openCursor (IDBKeyRange.only (conceptId)).onsuccess = function (evnt)
@@ -180,8 +117,126 @@ function Ontology ()
         return deferred.promise ();
     }
 
+    function getLocalStorage ()
+    {
+        if (!localStorageDeferred)
+        {
+            localStorageDeferred = $.Deferred ();
+
+            if (localStorage.length == 0)
+            {
+                $.when (loadSearchablePartsList ('isa',    'isa_parts_list_e'),
+                        loadSearchablePartsList ('partof', 'partof_parts_list_e'))
+                .then (function ()
+                {
+                    localStorageDeferred.resolve ();
+                });
+            }
+            else
+            {
+                localStorageDeferred.resolve ();
+            }
+        }
+
+        return localStorageDeferred.promise ();
+    }
+
+    function getDB ()
+    {
+        var dbUpgraded, dbDataLoaded = [];
+
+        if (!dbDeferred)
+        {
+            if (!window.indexedDB || /(iPad|iPhone|iPod)/g.test (navigator.userAgent))
+            {
+                var element = Detector.getWebGLErrorMessage ();
+                element.innerHTML = "Your browser doesn't support the Indexed Database API. Please use a browser with better support for "
+                                    + " <a href='http://caniuse.com/indexeddb' style='color:#000'>IndexedDB</a>";
+                element.style.position = 'relative';
+                element.style.zIndex = 100;
+
+                $('body').empty ();
+                $('body').append (element);
+
+                throw 'IndexedDB not supported';
+            }
+
+            dbDeferred = $.Deferred ();
+
+            var request = indexedDB.open (dbName, dbVersion);
+
+            request.onsuccess = function (evnt)
+            {
+                if (dbUpgraded)
+                    $.when.apply ($, dbDataLoaded).then (function () { dbDeferred.resolve (evnt.target.result); });
+                else
+                    dbDeferred.resolve (evnt.target.result);
+            }
+
+            request.onupgradeneeded = function (evnt)
+            {
+                dbUpgraded = $.Deferred ();
+                var db = evnt.target.result;
+                var objectStore;
+
+                ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
+                {
+                    if (db.objectStoreNames.contains (storeName))
+                        db.deleteObjectStore (storeName);
+                    objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+                    objectStore.createIndex ('representationId', 'representationId', { unique: true });
+                });
+
+                ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+                {
+                    if (db.objectStoreNames.contains (storeName))
+                        db.deleteObjectStore (storeName);
+                    objectStore = db.createObjectStore (storeName, { keyPath: 'id', autoIncrement: true });
+                    objectStore.createIndex ('parentId', 'parentId', { unique: false });
+                    objectStore.createIndex ('childId',  'childId',  { unique: false });
+                });
+
+                ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+                {
+                    if (db.objectStoreNames.contains (storeName))
+                        db.deleteObjectStore (storeName);
+                    objectStore = db.createObjectStore (storeName, { keyPath: 'conceptId' });
+                    objectStore.createIndex ('elementFileIds', 'elementFileIds', { unique: false });
+                });
+
+                objectStore.transaction.oncomplete = function ()
+                {
+                    ['isa_parts_list_e', 'partof_parts_list_e'].forEach (function (storeName)
+                    {
+                        dbDataLoaded.push (loadPartsList (db, storeName));
+                    });
+
+                    ['isa_inclusion_relation_list', 'partof_inclusion_relation_list'].forEach (function (storeName)
+                    {
+                        dbDataLoaded.push (loadInclusionRelationList (db, storeName));
+                    });
+
+
+                    ['isa_element_parts', 'partof_element_parts'].forEach (function (storeName)
+                    {
+                        dbDataLoaded.push (loadElementParts (db, storeName));
+                    });
+
+                    if (localStorageDeferred)
+                        localStorageDeferred.reject ();
+                    localStorageDeferred = undefined;
+                    localStorage.clear ();
+                };
+            }
+        }
+
+        return dbDeferred.promise ();
+    }
+
     function loadSearchablePartsList (tree, fileName)
     {
+        var deferred = $.Deferred ();
+
         $.get ('data/' + fileName + '.txt', function (data)
         {
             var lines = data.split ('\n');
@@ -192,7 +247,11 @@ function Ontology ()
                 if (fields.length == 3)
                     localStorage.setItem (tree + '.' + fields[0], fields[2]);
             }
+
+            deferred.resolve ();
         });
+
+        return deferred.promise ();
     }
 
     function loadPartsList (db, storeName)
