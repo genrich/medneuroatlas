@@ -147,7 +147,7 @@ function Ontology ()
 
         if (!dbDeferred)
         {
-            if (!window.indexedDB || /(iPad|iPhone|iPod)/g.test (navigator.userAgent))
+            if (!window.indexedDB)
             {
                 var element = Detector.getWebGLErrorMessage ();
                 element.innerHTML = "Your browser doesn't support the Indexed Database API. Please use a browser with better support for "
