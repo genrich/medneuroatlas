@@ -221,7 +221,7 @@ function Viewport (sig, container)
 
     function to2d (vec3d)
     {
-        var vector = vec3d.clone().project (camera);
+        var vector = vec3d.clone ().project (camera);
         vector.x =  (vector.x + 1) / 2 * container.width ();
         vector.y = -(vector.y - 1) / 2 * container.height ();
         return vector;

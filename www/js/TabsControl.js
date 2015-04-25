@@ -259,7 +259,6 @@ function TabsControl (sig, ontology, viewport)
     else
     {
         $('#tabs').tabs ('option', 'active', 0);
-        showConcept ('partof.FMA50801', false);
         showConcept ('partof.FMA53672', true);
     }
 
